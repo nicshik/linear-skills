@@ -20,7 +20,7 @@ ENV_KEY = "LINEAR_API_KEY"
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Change a Linear issue workflow state.")
-    parser.add_argument("issue", help="Linear issue identifier or ID, for example FCT-9.")
+    parser.add_argument("issue", help="Linear issue identifier or ID, for example LIN-123.")
     parser.add_argument("status", help="Target workflow state name or type, for example Done.")
     parser.add_argument("--env-file", help="Path to a .env file containing LINEAR_API_KEY.")
     parser.add_argument("--api-url", default=API_URL, help="Linear GraphQL API URL.")
@@ -40,6 +40,8 @@ def parse_env_file(path: Path) -> dict[str, str]:
         line = raw_line.strip()
         if not line or line.startswith("#") or "=" not in line:
             continue
+        if line.startswith("export "):
+            line = line.removeprefix("export ").strip()
         key, value = line.split("=", 1)
         key = key.strip()
         value = value.strip().strip('"').strip("'")
@@ -59,12 +61,7 @@ def candidate_env_files(args: argparse.Namespace) -> list[Path]:
     for base in [cwd, *cwd.parents]:
         paths.extend([base / ".env.local", base / ".env"])
 
-    paths.extend(
-        [
-            cwd / "FactorixMarket" / "app" / ".env.local",
-            cwd / "app" / ".env.local",
-        ]
-    )
+    paths.append(cwd / "app" / ".env.local")
 
     deduped: list[Path] = []
     seen: set[Path] = set()

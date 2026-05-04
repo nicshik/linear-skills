@@ -27,7 +27,7 @@ prefix_rule(pattern=["python3", "linear-custom-view/scripts/custom_view.py"], de
 These rules allow commands that start with the exact script path, for example:
 
 ```bash
-python3 linear-change-status/scripts/change_status.py FCT-9 Done --env-file /path/to/.env.local
+python3 linear-change-status/scripts/change_status.py LIN-123 Done --env-file /path/to/.env.local
 python3 linear-custom-view/scripts/custom_view.py https://linear.app/example/view/example-123 --limit 10
 ```
 
@@ -129,7 +129,7 @@ After adding the rules and restarting Codex, these commands should run without a
 
 ```bash
 python3 linear-custom-view/scripts/custom_view.py https://linear.app/example/view/example-123 --env-file /path/to/.env.local --limit 1
-python3 linear-change-status/scripts/change_status.py FCT-9 Done --env-file /path/to/.env.local --dry-run
+python3 linear-change-status/scripts/change_status.py LIN-123 Done --env-file /path/to/.env.local --dry-run
 ```
 
 Use `--dry-run` for status changes when testing. It reads the issue and resolves the target status without updating Linear.

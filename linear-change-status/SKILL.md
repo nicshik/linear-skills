@@ -62,9 +62,9 @@ For full setup details and a ready-to-copy rules snippet, see `docs/codex-approv
 ## Recommended Commands
 
 ```bash
-python3 scripts/change_status.py FCT-9 Done --env-file FactorixMarket/app/.env.local
-python3 scripts/change_status.py FCT-10 "In Progress" --json
-python3 scripts/change_status.py FCT-11 Done --dry-run
+python3 scripts/change_status.py LIN-123 Done --env-file /path/to/.env.local
+python3 scripts/change_status.py LIN-124 "In Progress" --json
+python3 scripts/change_status.py LIN-125 Done --dry-run
 ```
 
 ## Output Shape

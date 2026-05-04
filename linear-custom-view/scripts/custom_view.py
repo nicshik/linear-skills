@@ -47,6 +47,8 @@ def parse_env_file(path: Path) -> dict[str, str]:
         line = raw_line.strip()
         if not line or line.startswith("#") or "=" not in line:
             continue
+        if line.startswith("export "):
+            line = line.removeprefix("export ").strip()
         key, value = line.split("=", 1)
         key = key.strip()
         value = value.strip().strip('"').strip("'")
@@ -66,12 +68,7 @@ def candidate_env_files(args: argparse.Namespace) -> list[Path]:
     for base in [cwd, *cwd.parents]:
         paths.extend([base / ".env.local", base / ".env"])
 
-    paths.extend(
-        [
-            cwd / "FactorixMarket" / "app" / ".env.local",
-            cwd / "app" / ".env.local",
-        ]
-    )
+    paths.append(cwd / "app" / ".env.local")
 
     deduped: list[Path] = []
     seen: set[Path] = set()

@@ -1,33 +1,144 @@
 # Linear Skills
 
-Codex skills for direct Linear GraphQL API workflows.
+Codex skills and small Python scripts for direct Linear GraphQL API workflows.
 
-## Skills
+This repository is useful when the standard Linear connector is read-only, unavailable, or blocked by a tool guard, but you still need a narrow, auditable way to automate Linear actions with your own personal API key.
 
-- `linear-change-status` — change a Linear issue status and verify the result.
-- `linear-custom-view` — read a Linear Custom View, including manually sorted issues.
+## Included Skills
 
-## Setup
+| Skill | Purpose |
+| --- | --- |
+| `linear-change-status` | Change a Linear issue workflow state and verify the result. |
+| `linear-custom-view` | Read a Linear Custom View and return its issues in manual order. |
 
-Set `LINEAR_API_KEY` in your shell, or pass a local env file to the bundled scripts:
+## Repository Layout
 
-```bash
-python3 linear-change-status/scripts/change_status.py FCT-9 Done --env-file /path/to/.env.local
-python3 linear-custom-view/scripts/custom_view.py "https://linear.app/.../view/..." --env-file /path/to/.env.local
+```text
+linear-change-status/
+  SKILL.md
+  agents/openai.yaml
+  scripts/change_status.py
+linear-custom-view/
+  SKILL.md
+  agents/openai.yaml
+  scripts/custom_view.py
+docs/
+  codex-approvals.md
+examples/
+  default.rules.snippet
 ```
 
-The key must be a Linear personal API key with access to the workspace.
+## Requirements
 
-## Codex approvals
+- Python 3.10 or newer.
+- A Linear personal API key with access to the target workspace.
+- Optional but recommended: `certifi` for reliable TLS certificate handling on macOS Python installs.
 
-The scripts call the Linear API, so Codex may ask for network approval the first time.
+Install the optional Python dependency:
 
-To avoid repeated prompts, choose the option like "Yes, and don't ask again" for these command prefixes:
+```bash
+python3 -m pip install -r requirements.txt
+```
 
-- `python3 linear-change-status/scripts/change_status.py`
-- `python3 linear-custom-view/scripts/custom_view.py`
+## API Key Setup
+
+Set the key in your shell:
+
+```bash
+export LINEAR_API_KEY=<linear-api-key>
+```
+
+Or pass a local env file:
+
+```bash
+python3 linear-custom-view/scripts/custom_view.py <view-url> --env-file /path/to/.env.local
+```
+
+The env file should contain:
+
+```text
+LINEAR_API_KEY=<linear-api-key>
+```
+
+Do not commit real API keys. `.env` and `.env.*` are ignored by this repository.
+
+## Usage
+
+Read a Custom View queue in manual order:
+
+```bash
+python3 linear-custom-view/scripts/custom_view.py \
+  "https://linear.app/example/view/my-view-123abc" \
+  --env-file /path/to/.env.local \
+  --limit 50
+```
+
+Change an issue status:
+
+```bash
+python3 linear-change-status/scripts/change_status.py LIN-123 Done \
+  --env-file /path/to/.env.local
+```
+
+Test a status transition without updating Linear:
+
+```bash
+python3 linear-change-status/scripts/change_status.py LIN-123 Done \
+  --env-file /path/to/.env.local \
+  --dry-run
+```
+
+Use `--json` when another tool or agent should consume the output.
+
+## Codex Approvals
+
+The scripts call the Linear API, so Codex may ask for network approval. To avoid repeated prompts while keeping the permission narrow, approve only these prefixes:
+
+```text
+python3 linear-change-status/scripts/change_status.py
+python3 linear-custom-view/scripts/custom_view.py
+```
 
 Do not approve broad prefixes such as `python3`.
 
-For a complete setup guide, including pre-seeding Codex rules before the first run, see
-[`docs/codex-approvals.md`](docs/codex-approvals.md).
+For complete setup guidance, including how to pre-seed rules before the first run, see [`docs/codex-approvals.md`](docs/codex-approvals.md).
+
+## Safety Model
+
+- The API key is read from environment variables or local env files only.
+- The scripts never print the API key.
+- `linear-change-status` reads the issue, resolves the target state in the issue's team, updates only when needed, then verifies.
+- `linear-change-status --dry-run` resolves the transition without updating Linear.
+- `linear-custom-view` preserves the view's manual order with Linear's `manual` sort.
+
+## Development
+
+Run syntax checks:
+
+```bash
+python3 -m py_compile \
+  linear-change-status/scripts/change_status.py \
+  linear-custom-view/scripts/custom_view.py
+```
+
+Run a secret sanity check before pushing:
+
+```bash
+rg -n 'LINEAR_API_KEY=.*[A-Za-z0-9]{20,}' .
+```
+
+## Contributing
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+## Security
+
+See [`SECURITY.md`](SECURITY.md).
+
+## License
+
+MIT. See [`LICENSE`](LICENSE).
+
+## Disclaimer
+
+This project is not affiliated with Linear. It uses Linear's public GraphQL API with a user-provided personal API key.

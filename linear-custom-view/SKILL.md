@@ -61,9 +61,9 @@ For full setup details and a ready-to-copy rules snippet, see `docs/codex-approv
 ## Recommended Commands
 
 ```bash
-python3 scripts/custom_view.py "https://linear.app/shihini/view/ochered-realizacii-agent-creator-ea68e703fad4" --env-file FactorixMarket/app/.env.local
-python3 scripts/custom_view.py ea68e703fad4 --json
-python3 scripts/custom_view.py "Очередь реализации [Agent_Creator]" --limit 50
+python3 scripts/custom_view.py "https://linear.app/example/view/team-queue-123abc" --env-file /path/to/.env.local
+python3 scripts/custom_view.py 123abc --json
+python3 scripts/custom_view.py "Team Queue" --limit 50
 ```
 
 ## Output Shape
