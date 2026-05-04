@@ -1,0 +1,9 @@
+interface:
+  display_name: "Linear Custom View"
+  short_description: "Read Linear Custom View queues"
+  brand_color: "#5E6AD2"
+  default_prompt: "Use $linear-custom-view to read a Linear Custom View through the direct Linear API, preserve manual order, and return the live issue queue."
+
+policy:
+  allow_implicit_invocation: false
+
