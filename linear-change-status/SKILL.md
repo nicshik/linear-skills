@@ -39,6 +39,17 @@ Prefer the official Linear MCP connector for read-only discovery. Use this skill
 - If the issue is already in the target state, report a no-op instead of sending an update.
 - For bulk changes, process issues one at a time and report each result.
 
+## Codex Permission Rule
+
+When Codex sandboxing asks for approval because the script needs network access, request a persistent command prefix:
+
+- `sandbox_permissions`: `require_escalated`
+- `prefix_rule`: `["python3", "linear-change-status/scripts/change_status.py"]`
+
+Tell the user to choose the option like "Yes, and don't ask again for commands that start with this prefix". After that, the same status-change script can run without repeated prompts.
+
+Keep the command prefix stable by running from the `linear-skills` repository root. Pass the API key only through the environment or `--env-file`; never pass the key as a command argument.
+
 ## Default Flow
 
 1. Identify the issue key or ID and target status from the user request.

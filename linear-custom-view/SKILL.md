@@ -38,6 +38,17 @@ This skill is useful when Linear MCP cannot read custom views or when the view's
 - Treat the Custom View filter as the source of truth. Do not add hidden filters unless the user asks.
 - If a completed issue disappears from the view, explain that the view filter controls visibility.
 
+## Codex Permission Rule
+
+When Codex sandboxing asks for approval because the script needs network access, request a persistent command prefix:
+
+- `sandbox_permissions`: `require_escalated`
+- `prefix_rule`: `["python3", "linear-custom-view/scripts/custom_view.py"]`
+
+Tell the user to choose the option like "Yes, and don't ask again for commands that start with this prefix". After that, the same Custom View script can run without repeated prompts.
+
+Keep the command prefix stable by running from the `linear-skills` repository root. Pass the API key only through the environment or `--env-file`; never pass the key as a command argument.
+
 ## Default Flow
 
 1. Pass the Linear view URL, slug, ID, or exact name to the script.

@@ -18,3 +18,13 @@ python3 linear-custom-view/scripts/custom_view.py "https://linear.app/.../view/.
 
 The key must be a Linear personal API key with access to the workspace.
 
+## Codex approvals
+
+The scripts call the Linear API, so Codex may ask for network approval the first time.
+
+To avoid repeated prompts, choose the option like "Yes, and don't ask again" for these command prefixes:
+
+- `python3 linear-change-status/scripts/change_status.py`
+- `python3 linear-custom-view/scripts/custom_view.py`
+
+Do not approve broad prefixes such as `python3`.
