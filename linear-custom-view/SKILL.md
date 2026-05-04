@@ -49,6 +49,8 @@ Tell the user to choose the option like "Yes, and don't ask again for commands t
 
 Keep the command prefix stable by running from the `linear-skills` repository root. Pass the API key only through the environment or `--env-file`; never pass the key as a command argument.
 
+For full setup details and a ready-to-copy rules snippet, see `docs/codex-approvals.md` in the repository root.
+
 ## Default Flow
 
 1. Pass the Linear view URL, slug, ID, or exact name to the script.

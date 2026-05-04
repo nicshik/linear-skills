@@ -28,3 +28,6 @@ To avoid repeated prompts, choose the option like "Yes, and don't ask again" for
 - `python3 linear-custom-view/scripts/custom_view.py`
 
 Do not approve broad prefixes such as `python3`.
+
+For a complete setup guide, including pre-seeding Codex rules before the first run, see
+[`docs/codex-approvals.md`](docs/codex-approvals.md).
