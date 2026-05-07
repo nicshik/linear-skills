@@ -33,6 +33,7 @@ examples/
 scripts/
   validate.sh
   secret_scan.sh
+  release_check.sh
 ```
 
 ## Требования
@@ -169,6 +170,14 @@ scripts/secret_scan.sh
 ```
 
 `scripts/validate.sh` также блокирует случайные проектные или локальные машинные строки, чтобы публичный репозиторий оставался переносимым.
+
+Локальный release gate после commit и push:
+
+```bash
+scripts/release_check.sh
+```
+
+Порядок релиза описан в [`docs/release.md`](docs/release.md). Обновления зависимостей ведёт Dependabot для GitHub Actions и Python requirements.
 
 ## Участие
 

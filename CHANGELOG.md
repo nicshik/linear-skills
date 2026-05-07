@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-05-07 - v0.2.1
+
+- Add Dependabot for GitHub Actions and Python dependencies.
+- Add `scripts/release_check.sh` and release runbook.
+- Document release workflow in README and contributing guide.
+
 ## 2026-05-07 - v0.2.0
 
 - Add repository-level `scripts/validate.sh` and `scripts/secret_scan.sh`.

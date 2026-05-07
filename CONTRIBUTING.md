@@ -25,6 +25,14 @@ scripts/secret_scan.sh
 These checks mirror the GitHub Actions CI and do not require a real `LINEAR_API_KEY`.
 They also block accidental project-specific or local-machine strings. Keep project-specific queue URLs, issue prefixes, delivery rules, and private workspace names outside this public repository.
 
+Before tagging a release, run:
+
+```bash
+scripts/release_check.sh
+```
+
+Release steps are documented in [`docs/release.md`](docs/release.md).
+
 ## Adding A New Skill
 
 Follow the existing structure:
