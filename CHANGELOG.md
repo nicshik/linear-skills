@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-05-07 - v0.2.2
+
+- Update `certifi` minimum requirement to `2026.4.22`.
+
 ## 2026-05-07 - v0.2.1
 
 - Add Dependabot for GitHub Actions and Python dependencies.
