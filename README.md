@@ -73,6 +73,15 @@ python3 linear-custom-view/scripts/custom_view.py \
   --limit 50
 ```
 
+Return the first actionable row and explain the view filter:
+
+```bash
+python3 linear-custom-view/scripts/custom_view.py \
+  "https://linear.app/example/view/my-view-123abc" \
+  --env-file /path/to/.env.local \
+  --json --first --explain-filter
+```
+
 Change an issue status:
 
 ```bash
@@ -86,6 +95,15 @@ Test a status transition without updating Linear:
 python3 linear-change-status/scripts/change_status.py LIN-123 Done \
   --env-file /path/to/.env.local \
   --dry-run
+```
+
+Preview a batch of one-by-one status transitions:
+
+```bash
+python3 linear-change-status/scripts/change_status.py \
+  --batch-file status_changes.tsv \
+  --env-file /path/to/.env.local \
+  --json
 ```
 
 Use `--json` when another tool or agent should consume the output.
@@ -113,6 +131,8 @@ For complete setup guidance, including how to pre-seed rules before the first ru
 
 ## Development
 
+CI runs on pull requests, pushes to `main`, and manual GitHub Actions dispatches. It does not call the live Linear API and does not require `LINEAR_API_KEY`; tests must use local mocks or fixtures.
+
 Run syntax checks:
 
 ```bash
@@ -121,10 +141,36 @@ python3 -m py_compile \
   linear-custom-view/scripts/custom_view.py
 ```
 
+Run the local CI equivalent:
+
+```bash
+python3 -m compileall linear-change-status linear-custom-view tests
+python3 -m py_compile \
+  linear-change-status/scripts/change_status.py \
+  linear-custom-view/scripts/custom_view.py
+python3 -m unittest discover -s tests
+python3 scripts/validate_skill_files.py
+python3 linear-custom-view/scripts/custom_view.py --help
+python3 linear-change-status/scripts/change_status.py --help
+```
+
+Run fixture tests:
+
+```bash
+python3 -m unittest discover -s tests
+```
+
 Run a secret sanity check before pushing:
 
 ```bash
-rg -n 'LINEAR_API_KEY=.*[A-Za-z0-9]{20,}' .
+rg -n -I --hidden --glob '!.git/**' \
+  -e 'LINEAR_API_KEY=[A-Za-z0-9_./+=:-]{20,}' \
+  -e 'lin_api_[A-Za-z0-9_]{20,}' \
+  -e 'sk-[A-Za-z0-9_-]{20,}' \
+  -e 'gh[pousr]_[A-Za-z0-9_]{20,}' \
+  -e 'BEGIN [A-Z ]*PRIVATE KEY' \
+  -e 'Bearer [A-Za-z0-9._~+/=-]{20,}' \
+  .
 ```
 
 ## Contributing

@@ -11,7 +11,6 @@ metadata:
       - codex
       - claude_code
       - cursor
-      - windsurf
   distribution_scope: internal
   invocation_strategy: explicit
   version: v0.1
@@ -37,6 +36,8 @@ This skill is useful when Linear MCP cannot read custom views or when the view's
 - Never print the API key.
 - Treat the Custom View filter as the source of truth. Do not add hidden filters unless the user asks.
 - If a completed issue disappears from the view, explain that the view filter controls visibility.
+- Use this skill only to read the ordered Custom View queue. Read full issue details, comments, and blocking links through the normal Linear connector or the caller's project workflow.
+- When another agent will consume the result, prefer `--json --first` and read `first_issue` instead of reinterpreting issue order.
 
 ## Codex Permission Rule
 
@@ -55,19 +56,36 @@ For full setup details and a ready-to-copy rules snippet, see `docs/codex-approv
 
 1. Pass the Linear view URL, slug, ID, or exact name to the script.
 2. Use `--json` when the result will drive automation.
-3. Read the returned `filter_data`, issue count, and ordered issues.
-4. Use the returned order as the queue order.
+3. Use `--first` when the workflow needs the first actionable issue from the manual queue.
+4. Use `--explain-filter` when reporting why completed or filtered issues are missing.
+5. Use `--include-relations-summary` only for a light read-only overview; do not treat it as a replacement for full `linear:linear` issue reads.
+6. Read the returned `filterData`, issue count, ordered issues, and optional `first_issue`.
+7. Use the returned order as the queue order.
 
 ## Recommended Commands
 
 ```bash
 python3 scripts/custom_view.py "https://linear.app/example/view/team-queue-123abc" --env-file /path/to/.env.local
 python3 scripts/custom_view.py 123abc --json
+python3 scripts/custom_view.py 123abc --json --first --explain-filter
+python3 scripts/custom_view.py 123abc --json --include-relations-summary --limit 20
 python3 scripts/custom_view.py "Team Queue" --limit 50
 ```
 
 ## Output Shape
 
 - Text output: view name, slug, issue count, then one issue per line in manual order.
-- `--json` output: view metadata, `filter_data`, and ordered issue objects.
+- `--json` output: `schema_version`, `fetched_at`, `queue_order`, view metadata, issue count, and ordered issue objects.
+- `--first` output: `first_issue` with `row_index`, `identifier`, `status`, `status_type`, `manual_order`, `view_slug`, and the original issue row. Completed/canceled rows are skipped when looking for the first actionable issue.
+- `--explain-filter` output: `filter_explanation` with raw `filterData` and a note that visibility is controlled by the Custom View.
+- `--include-relations-summary` output: labels plus light `relations_summary` and `comments_summary` counts from Linear connections.
 - On ambiguity, the script lists matching views and exits without guessing.
+
+## Project Workflow Boundary
+
+For larger project workflows, this skill covers only the queue-read step:
+
+1. Read the live manual queue from Linear Custom View.
+2. Select the first actionable issue when requested.
+3. Read full issue context through the normal Linear connector or project-specific workflow.
+4. Change statuses outside this queue reader after the caller has completed its own readiness checks.

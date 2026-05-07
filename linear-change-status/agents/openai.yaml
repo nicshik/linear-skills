@@ -2,8 +2,7 @@ interface:
   display_name: "Linear Change Status"
   short_description: "Change Linear issue status via API"
   brand_color: "#5E6AD2"
-  default_prompt: "Use $linear-change-status to change one Linear issue status through the direct Linear API, verify the result, and never print the API key."
+  default_prompt: "Use $linear-change-status as a narrow fallback to change Linear issue statuses through the direct Linear API, verify each result, keep batch mode dry-run unless --apply-batch is explicit, and never print the API key."
 
 policy:
   allow_implicit_invocation: false
-

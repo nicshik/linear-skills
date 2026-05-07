@@ -2,8 +2,7 @@ interface:
   display_name: "Linear Custom View"
   short_description: "Read Linear Custom View queues"
   brand_color: "#5E6AD2"
-  default_prompt: "Use $linear-custom-view to read a Linear Custom View through the direct Linear API, preserve manual order, and return the live issue queue."
+  default_prompt: "Use $linear-custom-view to read a Linear Custom View through the direct Linear API, preserve manual order, return the live issue queue, use --first for the first actionable row, and use --explain-filter when visibility is controlled by the view filter."
 
 policy:
   allow_implicit_invocation: false
-
