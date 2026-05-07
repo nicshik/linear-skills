@@ -11,9 +11,9 @@ metadata:
       - codex
       - claude_code
       - cursor
-  distribution_scope: internal
+  distribution_scope: public
   invocation_strategy: explicit
-  version: v0.1
+  version: v0.2
   source_of_truth: https://github.com/nicshik/linear-skills
 ---
 

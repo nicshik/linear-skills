@@ -1,8 +1,12 @@
 # Linear Skills
 
+[Русский](README.ru.md)
+
 Codex skills and small Python scripts for direct Linear GraphQL API workflows.
 
 This repository is useful when the standard Linear connector is read-only, unavailable, or blocked by a tool guard, but you still need a narrow, auditable way to automate Linear actions with your own personal API key.
+
+The repository is intentionally generic. Project-specific queues, delivery rules, issue prefixes, and "Done" policies should live in a separate wrapper skill or project repository.
 
 ## Included Skills
 
@@ -26,6 +30,9 @@ docs/
   codex-approvals.md
 examples/
   default.rules.snippet
+scripts/
+  validate.sh
+  secret_scan.sh
 ```
 
 ## Requirements
@@ -108,6 +115,15 @@ python3 linear-change-status/scripts/change_status.py \
 
 Use `--json` when another tool or agent should consume the output.
 
+## Project-Specific Wrappers
+
+These skills are low-level Linear helpers:
+
+- `linear-custom-view` reads a Custom View queue and preserves manual order.
+- `linear-change-status` performs a narrow status transition and verifies it.
+
+They do not decide which project issue should be implemented, whether delivery is complete, or whether `Done` is appropriate. Keep those decisions in a project-specific wrapper skill or process document. The wrapper can call these scripts through stable environment variables such as `LINEAR_API_KEY`, `LINEAR_ENV_FILE`, or `--env-file`.
+
 ## Codex Approvals
 
 The scripts call the Linear API, so Codex may ask for network approval. To avoid repeated prompts while keeping the permission narrow, approve only these prefixes:
@@ -144,17 +160,10 @@ python3 -m py_compile \
 Run the local CI equivalent:
 
 ```bash
-python3 -m compileall linear-change-status linear-custom-view tests
-python3 -m py_compile \
-  linear-change-status/scripts/change_status.py \
-  linear-custom-view/scripts/custom_view.py
-python3 -m unittest discover -s tests
-python3 scripts/validate_skill_files.py
-python3 linear-custom-view/scripts/custom_view.py --help
-python3 linear-change-status/scripts/change_status.py --help
+scripts/validate.sh
 ```
 
-Run fixture tests:
+Run fixture tests only:
 
 ```bash
 python3 -m unittest discover -s tests
@@ -163,19 +172,18 @@ python3 -m unittest discover -s tests
 Run a secret sanity check before pushing:
 
 ```bash
-rg -n -I --hidden --glob '!.git/**' \
-  -e 'LINEAR_API_KEY=[A-Za-z0-9_./+=:-]{20,}' \
-  -e 'lin_api_[A-Za-z0-9_]{20,}' \
-  -e 'sk-[A-Za-z0-9_-]{20,}' \
-  -e 'gh[pousr]_[A-Za-z0-9_]{20,}' \
-  -e 'BEGIN [A-Z ]*PRIVATE KEY' \
-  -e 'Bearer [A-Za-z0-9._~+/=-]{20,}' \
-  .
+scripts/secret_scan.sh
 ```
+
+`scripts/validate.sh` also blocks accidental project-specific or local-machine strings so this public repository stays portable.
 
 ## Contributing
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+## Changelog
+
+See [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Security
 

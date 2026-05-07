@@ -22,10 +22,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -41,42 +41,5 @@ jobs:
             sudo apt-get install -y ripgrep
           fi
 
-      - name: Compile Python sources
-        run: |
-          python -m compileall linear-change-status linear-custom-view tests
-          python -m py_compile \
-            linear-change-status/scripts/change_status.py \
-            linear-custom-view/scripts/custom_view.py
-
-      - name: Run fixture tests
-        run: python -m unittest discover -s tests
-
-      - name: Validate skill metadata
-        run: python scripts/validate_skill_files.py
-
-      - name: CLI help smoke
-        run: |
-          python linear-custom-view/scripts/custom_view.py --help
-          python linear-change-status/scripts/change_status.py --help
-
-      - name: Secret scan
-        run: |
-          set +e
-          rg -n -I --hidden --glob '!.git/**' \
-            -e 'LINEAR_API_KEY=[A-Za-z0-9_./+=:-]{20,}' \
-            -e 'lin_api_[A-Za-z0-9_]{20,}' \
-            -e 'sk-[A-Za-z0-9_-]{20,}' \
-            -e 'gh[pousr]_[A-Za-z0-9_]{20,}' \
-            -e 'BEGIN [A-Z ]*PRIVATE KEY' \
-            -e 'Bearer [A-Za-z0-9._~+/=-]{20,}' \
-            .
-          rc="$?"
-          set -e
-          if [ "$rc" -eq 0 ]; then
-            echo "Secret-like value found."
-            exit 1
-          fi
-          if [ "$rc" -gt 1 ]; then
-            exit "$rc"
-          fi
-          echo "No secret-like values found."
+      - name: Validate repository
+        run: scripts/validate.sh
