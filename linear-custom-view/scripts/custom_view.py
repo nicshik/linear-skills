@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import json
 import os
 import re
@@ -31,6 +32,21 @@ def parse_args() -> argparse.Namespace:
         choices=("Ascending", "Descending"),
         default="Ascending",
         help="Manual sort order.",
+    )
+    parser.add_argument(
+        "--first",
+        action="store_true",
+        help="Include the first actionable issue in a stable first_issue field.",
+    )
+    parser.add_argument(
+        "--explain-filter",
+        action="store_true",
+        help="Include the Custom View filterData and a short note about view-controlled visibility.",
+    )
+    parser.add_argument(
+        "--include-relations-summary",
+        action="store_true",
+        help="Fetch read-only relation/comment counts and labels for issue rows.",
     )
     parser.add_argument("--json", action="store_true", help="Emit structured JSON.")
     return parser.parse_args()
@@ -202,7 +218,73 @@ def find_view(client: LinearClient, value: str) -> dict[str, Any]:
     raise SystemExit("\n".join(lines))
 
 
-def fetch_issues(client: LinearClient, view_id: str, limit: int, order: str) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+def issue_fields(include_relations_summary: bool) -> str:
+    base = """
+                    id
+                    identifier
+                    title
+                    priority
+                    sortOrder
+                    updatedAt
+                    state { name type }
+                    parent { identifier title }
+                    project { name }
+                    assignee { name }
+    """
+    if not include_relations_summary:
+        return base
+    return (
+        base
+        + """
+                    labels { nodes { name } }
+                    comments(first: 50) { pageInfo { hasNextPage } nodes { id } }
+                    relations(first: 50) {
+                      pageInfo { hasNextPage }
+                      nodes {
+                        id
+                        type
+                        relatedIssue { identifier title state { name type } }
+                      }
+                    }
+        """
+    )
+
+
+def add_relation_summaries(issues: list[dict[str, Any]]) -> None:
+    for issue in issues:
+        labels = issue.pop("labels", None) or {}
+        comments = issue.pop("comments", None) or {}
+        relations = issue.pop("relations", None) or {}
+        if not labels and not comments and not relations:
+            continue
+        issue["labels"] = [node["name"] for node in labels.get("nodes", []) if node.get("name")]
+        relation_nodes = relations.get("nodes", [])
+        issue["relations_summary"] = {
+            "visible_count": len(relation_nodes),
+            "has_more": bool((relations.get("pageInfo") or {}).get("hasNextPage")),
+            "items": [
+                {
+                    "type": node.get("type"),
+                    "identifier": (node.get("relatedIssue") or {}).get("identifier"),
+                    "title": (node.get("relatedIssue") or {}).get("title"),
+                    "status": ((node.get("relatedIssue") or {}).get("state") or {}).get("name"),
+                }
+                for node in relation_nodes
+            ],
+        }
+        issue["comments_summary"] = {
+            "visible_count": len(comments.get("nodes", [])),
+            "has_more": bool((comments.get("pageInfo") or {}).get("hasNextPage")),
+        }
+
+
+def fetch_issues(
+    client: LinearClient,
+    view_id: str,
+    limit: int,
+    order: str,
+    include_relations_summary: bool,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     if limit < 1:
         raise SystemExit("--limit must be greater than zero.")
 
@@ -212,6 +294,7 @@ def fetch_issues(client: LinearClient, view_id: str, limit: int, order: str) -> 
 
     while len(issues) < limit:
         first = min(250, limit - len(issues))
+        fields = issue_fields(include_relations_summary)
         data = client.gql(
             f"""
             query ViewIssues($id: String!, $first: Int!, $after: String) {{
@@ -228,16 +311,7 @@ def fetch_issues(client: LinearClient, view_id: str, limit: int, order: str) -> 
                 issues(first: $first, after: $after, sort: [{{ manual: {{ order: {order} }} }}]) {{
                   pageInfo {{ hasNextPage endCursor }}
                   nodes {{
-                    id
-                    identifier
-                    title
-                    priority
-                    sortOrder
-                    updatedAt
-                    state {{ name type }}
-                    parent {{ identifier title }}
-                    project {{ name }}
-                    assignee {{ name }}
+                    {fields}
                   }}
                 }}
               }}
@@ -255,25 +329,81 @@ def fetch_issues(client: LinearClient, view_id: str, limit: int, order: str) -> 
             break
         after = connection["pageInfo"]["endCursor"]
 
+    if include_relations_summary:
+        add_relation_summaries(issues)
     return view_payload or {}, issues
+
+
+def first_actionable_issue(
+    issues: list[dict[str, Any]], view: dict[str, Any]
+) -> dict[str, Any] | None:
+    for index, issue in enumerate(issues, start=1):
+        state = issue.get("state") or {}
+        state_type = (state.get("type") or "").casefold()
+        if state_type in {"completed", "canceled"}:
+            continue
+        return {
+            "row_index": index,
+            "identifier": issue.get("identifier"),
+            "title": issue.get("title"),
+            "status": state.get("name"),
+            "status_type": state.get("type"),
+            "manual_order": issue.get("sortOrder"),
+            "view_slug": view.get("slugId"),
+            "issue": issue,
+        }
+    return None
+
+
+def filter_explanation(view: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "filter_data": view.get("filterData"),
+        "note": "Custom View filterData controls which issues are visible; completed issues can disappear when the view filter excludes them.",
+    }
 
 
 def main() -> int:
     args = parse_args()
     client = LinearClient(args.api_url, resolve_api_key(args))
     view = find_view(client, args.view)
-    full_view, issues = fetch_issues(client, view["id"], args.limit, args.order)
+    full_view, issues = fetch_issues(
+        client,
+        view["id"],
+        args.limit,
+        args.order,
+        args.include_relations_summary,
+    )
+    fetched_at = dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
     result = {
+        "schema_version": "linear-custom-view.v1",
+        "fetched_at": fetched_at,
+        "queue_order": "manual",
         "view": full_view,
         "issue_count": len(issues),
         "issues": issues,
     }
+    if args.first:
+        result["first_issue"] = first_actionable_issue(issues, full_view)
+    if args.explain_filter:
+        result["filter_explanation"] = filter_explanation(full_view)
 
     if args.json:
         print(json.dumps(result, ensure_ascii=False, indent=2))
     else:
         print(f"view={full_view['name']} slug={full_view.get('slugId') or '-'} issues={len(issues)}")
+        if args.explain_filter:
+            print("filterData=" + json.dumps(full_view.get("filterData"), ensure_ascii=False, sort_keys=True))
+            print("filter_note=Custom View filterData controls visibility; completed issues can disappear when excluded by the view.")
+        if args.first:
+            first_issue = result["first_issue"]
+            if first_issue:
+                print(
+                    f"first={first_issue['row_index']}\t{first_issue['identifier']}\t"
+                    f"{first_issue['status']}\tsort={first_issue.get('manual_order')}\t{first_issue['title']}"
+                )
+            else:
+                print("first=none")
         for issue in issues:
             print(
                 f"{issue['identifier']}\t{issue['state']['name']}\t"
