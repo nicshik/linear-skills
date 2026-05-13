@@ -48,6 +48,30 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Fetch read-only relation/comment counts and labels for issue rows.",
     )
+    parser.add_argument(
+        "--expect-label",
+        action="append",
+        default=[],
+        help="Require the first matching issue to have this label. Can be repeated.",
+    )
+    parser.add_argument(
+        "--exclude-label",
+        action="append",
+        default=[],
+        help="Skip issues with this label when selecting first_matching_issue. Can be repeated.",
+    )
+    parser.add_argument(
+        "--expect-title-regex",
+        action="append",
+        default=[],
+        help="Require the first matching issue title to match this regular expression. Can be repeated.",
+    )
+    parser.add_argument(
+        "--skip-title-regex",
+        action="append",
+        default=[],
+        help="Skip issues whose title matches this regular expression. Can be repeated.",
+    )
     parser.add_argument("--json", action="store_true", help="Emit structured JSON.")
     return parser.parse_args()
 
@@ -218,7 +242,7 @@ def find_view(client: LinearClient, value: str) -> dict[str, Any]:
     raise SystemExit("\n".join(lines))
 
 
-def issue_fields(include_relations_summary: bool) -> str:
+def issue_fields(include_relations_summary: bool, include_labels: bool = False) -> str:
     base = """
                     id
                     identifier
@@ -231,6 +255,13 @@ def issue_fields(include_relations_summary: bool) -> str:
                     project { name }
                     assignee { name }
     """
+    if include_labels and not include_relations_summary:
+        return (
+            base
+            + """
+                    labels { nodes { name } }
+        """
+        )
     if not include_relations_summary:
         return base
     return (
@@ -284,6 +315,7 @@ def fetch_issues(
     limit: int,
     order: str,
     include_relations_summary: bool,
+    include_labels: bool = False,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     if limit < 1:
         raise SystemExit("--limit must be greater than zero.")
@@ -294,7 +326,7 @@ def fetch_issues(
 
     while len(issues) < limit:
         first = min(250, limit - len(issues))
-        fields = issue_fields(include_relations_summary)
+        fields = issue_fields(include_relations_summary, include_labels)
         data = client.gql(
             f"""
             query ViewIssues($id: String!, $first: Int!, $after: String) {{
@@ -329,19 +361,75 @@ def fetch_issues(
             break
         after = connection["pageInfo"]["endCursor"]
 
-    if include_relations_summary:
+    if include_relations_summary or include_labels:
         add_relation_summaries(issues)
     return view_payload or {}, issues
 
 
+def issue_labels(issue: dict[str, Any]) -> set[str]:
+    labels = issue.get("labels")
+    if isinstance(labels, list):
+        return {str(label).casefold() for label in labels if str(label).strip()}
+    return set()
+
+
+def compile_regexes(patterns: list[str], option_name: str) -> list[re.Pattern[str]]:
+    regexes: list[re.Pattern[str]] = []
+    for pattern in patterns:
+        try:
+            regexes.append(re.compile(pattern, flags=re.IGNORECASE))
+        except re.error as exc:
+            raise SystemExit(f"{option_name} is not a valid regular expression: {pattern}: {exc}") from exc
+    return regexes
+
+
+def selection_filters_active(args: argparse.Namespace) -> bool:
+    return bool(args.expect_label or args.exclude_label or args.expect_title_regex or args.skip_title_regex)
+
+
+def build_issue_selector(args: argparse.Namespace):
+    expected_labels = {label.casefold() for label in args.expect_label}
+    excluded_labels = {label.casefold() for label in args.exclude_label}
+    expected_title_regexes = compile_regexes(args.expect_title_regex, "--expect-title-regex")
+    skipped_title_regexes = compile_regexes(args.skip_title_regex, "--skip-title-regex")
+
+    def selector(issue: dict[str, Any]) -> tuple[bool, str | None]:
+        labels = issue_labels(issue)
+        title = str(issue.get("title") or "")
+        missing_labels = sorted(expected_labels - labels)
+        blocked_labels = sorted(excluded_labels & labels)
+        missing_title_regexes = [regex.pattern for regex in expected_title_regexes if not regex.search(title)]
+        matched_skip_regexes = [regex.pattern for regex in skipped_title_regexes if regex.search(title)]
+        reasons: list[str] = []
+        if missing_labels:
+            reasons.append("missing expected label(s): " + ", ".join(missing_labels))
+        if blocked_labels:
+            reasons.append("excluded label(s): " + ", ".join(blocked_labels))
+        if missing_title_regexes:
+            reasons.append("title did not match expected regex: " + ", ".join(missing_title_regexes))
+        if matched_skip_regexes:
+            reasons.append("title matched skip regex: " + ", ".join(matched_skip_regexes))
+        if reasons:
+            return False, "; ".join(reasons)
+        return True, None
+
+    return selector
+
+
 def first_actionable_issue(
-    issues: list[dict[str, Any]], view: dict[str, Any]
+    issues: list[dict[str, Any]],
+    view: dict[str, Any],
+    issue_selector=None,
 ) -> dict[str, Any] | None:
     for index, issue in enumerate(issues, start=1):
         state = issue.get("state") or {}
         state_type = (state.get("type") or "").casefold()
         if state_type in {"completed", "canceled"}:
             continue
+        if issue_selector:
+            matched, _reason = issue_selector(issue)
+            if not matched:
+                continue
         return {
             "row_index": index,
             "identifier": issue.get("identifier"),
@@ -355,6 +443,45 @@ def first_actionable_issue(
     return None
 
 
+def first_matching_issue_with_skips(
+    issues: list[dict[str, Any]],
+    view: dict[str, Any],
+    issue_selector,
+) -> tuple[dict[str, Any] | None, list[dict[str, Any]]]:
+    skipped: list[dict[str, Any]] = []
+    for index, issue in enumerate(issues, start=1):
+        state = issue.get("state") or {}
+        state_type = (state.get("type") or "").casefold()
+        if state_type in {"completed", "canceled"}:
+            skipped.append({
+                "row_index": index,
+                "identifier": issue.get("identifier"),
+                "title": issue.get("title"),
+                "reason": f"state type is {state_type}",
+            })
+            continue
+        matched, reason = issue_selector(issue)
+        if not matched:
+            skipped.append({
+                "row_index": index,
+                "identifier": issue.get("identifier"),
+                "title": issue.get("title"),
+                "reason": reason,
+            })
+            continue
+        return {
+            "row_index": index,
+            "identifier": issue.get("identifier"),
+            "title": issue.get("title"),
+            "status": state.get("name"),
+            "status_type": state.get("type"),
+            "manual_order": issue.get("sortOrder"),
+            "view_slug": view.get("slugId"),
+            "issue": issue,
+        }, skipped
+    return None, skipped
+
+
 def filter_explanation(view: dict[str, Any]) -> dict[str, Any]:
     return {
         "filter_data": view.get("filterData"),
@@ -366,12 +493,14 @@ def main() -> int:
     args = parse_args()
     client = LinearClient(args.api_url, resolve_api_key(args))
     view = find_view(client, args.view)
+    filters_active = selection_filters_active(args)
     full_view, issues = fetch_issues(
         client,
         view["id"],
         args.limit,
         args.order,
         args.include_relations_summary,
+        include_labels=filters_active,
     )
     fetched_at = dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
@@ -385,6 +514,17 @@ def main() -> int:
     }
     if args.first:
         result["first_issue"] = first_actionable_issue(issues, full_view)
+    if filters_active:
+        selector = build_issue_selector(args)
+        first_matching_issue, skipped_issues = first_matching_issue_with_skips(issues, full_view, selector)
+        result["selection_filters"] = {
+            "expect_labels": args.expect_label,
+            "exclude_labels": args.exclude_label,
+            "expect_title_regexes": args.expect_title_regex,
+            "skip_title_regexes": args.skip_title_regex,
+        }
+        result["first_matching_issue"] = first_matching_issue
+        result["skipped_issues"] = skipped_issues
     if args.explain_filter:
         result["filter_explanation"] = filter_explanation(full_view)
 
@@ -404,6 +544,21 @@ def main() -> int:
                 )
             else:
                 print("first=none")
+        if filters_active:
+            first_matching_issue = result["first_matching_issue"]
+            if first_matching_issue:
+                print(
+                    f"first_matching={first_matching_issue['row_index']}\t{first_matching_issue['identifier']}\t"
+                    f"{first_matching_issue['status']}\tsort={first_matching_issue.get('manual_order')}\t"
+                    f"{first_matching_issue['title']}"
+                )
+            else:
+                print("first_matching=none")
+            for skipped in result["skipped_issues"]:
+                print(
+                    f"skipped={skipped['row_index']}\t{skipped.get('identifier')}\t"
+                    f"{skipped.get('reason')}\t{skipped.get('title')}"
+                )
         for issue in issues:
             print(
                 f"{issue['identifier']}\t{issue['state']['name']}\t"
