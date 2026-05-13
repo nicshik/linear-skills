@@ -60,6 +60,38 @@ class CustomViewTest(unittest.TestCase):
         self.assertEqual(explanation["filter_data"], {"state": "not_completed"})
         self.assertIn("visible", explanation["note"])
 
+    def test_first_matching_issue_reports_skipped_rows(self) -> None:
+        issues = [
+            {
+                "identifier": "LIN-117",
+                "title": "[Maxim] Check HTML prototypes",
+                "sortOrder": -10,
+                "state": {"name": "Backlog", "type": "backlog"},
+                "labels": ["Maxim"],
+            },
+            {
+                "identifier": "LIN-81",
+                "title": "B6-01: Довести SEO package до первого published",
+                "sortOrder": -9,
+                "state": {"name": "Backlog", "type": "backlog"},
+                "labels": ["BSG", "Publish"],
+            },
+        ]
+
+        class Args:
+            expect_label = ["BSG"]
+            exclude_label = ["Maxim"]
+            expect_title_regex = ["B6-"]
+            skip_title_regex = [r"^\[Maxim\]"]
+
+        selector = custom_view.build_issue_selector(Args)
+        first, skipped = custom_view.first_matching_issue_with_skips(issues, {"slugId": "bsg-queue"}, selector)
+
+        self.assertEqual(first["row_index"], 2)
+        self.assertEqual(first["identifier"], "LIN-81")
+        self.assertEqual(skipped[0]["identifier"], "LIN-117")
+        self.assertIn("excluded label", skipped[0]["reason"])
+
 
 if __name__ == "__main__":
     unittest.main()
