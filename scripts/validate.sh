@@ -18,6 +18,12 @@ blocked_terms=(
   "shini""hi"
   "ochered""-realizacii"
   "Agent ""Creator"
+  "Factor""ix Market"
+  "Max""im"
+  "B""SG"
+  "org""_default"
+  "Орг""задачи"
+  "factor""ix-codex"
 )
 for term in "${blocked_terms[@]}"; do
   if rg -n -i --fixed-strings --hidden --glob '!.git/**' --glob '!__pycache__/**' --glob '!*.pyc' "$term" .; then

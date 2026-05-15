@@ -26,7 +26,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("view", help="Linear Custom View URL, slugId, ID, or name.")
     parser.add_argument("--env-file", help="Path to a .env file containing LINEAR_API_KEY.")
     parser.add_argument("--api-url", default=API_URL, help="Linear GraphQL API URL.")
-    parser.add_argument("--limit", type=int, default=250, help="Maximum issues to return.")
+    parser.add_argument("--limit", type=int, default=250, help="Max issues to return.")
     parser.add_argument(
         "--order",
         choices=("Ascending", "Descending"),

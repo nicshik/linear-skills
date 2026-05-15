@@ -88,28 +88,30 @@ class CustomViewTest(unittest.TestCase):
         issues = [
             {
                 "identifier": "LIN-117",
-                "title": "[Maxim] Check HTML prototypes",
+                "title": "[Blocked] Check HTML prototypes",
                 "sortOrder": -10,
                 "state": {"name": "Backlog", "type": "backlog"},
-                "labels": ["Maxim"],
+                "labels": ["Blocked"],
             },
             {
                 "identifier": "LIN-81",
-                "title": "B6-01: Довести SEO package до первого published",
+                "title": "P1-01: Publish package metadata",
                 "sortOrder": -9,
                 "state": {"name": "Backlog", "type": "backlog"},
-                "labels": ["BSG", "Publish"],
+                "labels": ["Platform", "Publish"],
             },
         ]
 
         class Args:
-            expect_label = ["BSG"]
-            exclude_label = ["Maxim"]
-            expect_title_regex = ["B6-"]
-            skip_title_regex = [r"^\[Maxim\]"]
+            expect_label = ["Platform"]
+            exclude_label = ["Blocked"]
+            expect_title_regex = ["P1-"]
+            skip_title_regex = [r"^\[Blocked\]"]
 
         selector = custom_view.build_issue_selector(Args)
-        first, skipped = custom_view.first_matching_issue_with_skips(issues, {"slugId": "bsg-queue"}, selector)
+        first, skipped = custom_view.first_matching_issue_with_skips(
+            issues, {"slugId": "platform-queue"}, selector
+        )
 
         self.assertEqual(first["row_index"], 2)
         self.assertEqual(first["identifier"], "LIN-81")
