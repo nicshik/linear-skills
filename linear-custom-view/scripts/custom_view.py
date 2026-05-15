@@ -213,9 +213,36 @@ def list_views(client: LinearClient) -> list[dict[str, Any]]:
     return data["customViews"]["nodes"]
 
 
+def get_view_by_id_or_slug(client: LinearClient, value: str) -> dict[str, Any] | None:
+    data = client.gql(
+        """
+        query View($id: String!) {
+          customView(id: $id) {
+            id
+            name
+            slugId
+            shared
+            modelName
+            filterData
+            team { key name }
+            creator { name }
+            owner { name }
+          }
+        }
+        """,
+        {"id": value},
+    )
+    return data["customView"]
+
+
 def find_view(client: LinearClient, value: str) -> dict[str, Any]:
     lookup = view_lookup_key(value)
     lookup_norm = normalize(lookup)
+
+    direct = get_view_by_id_or_slug(client, lookup)
+    if direct:
+        return direct
+
     views = list_views(client)
 
     exact = [

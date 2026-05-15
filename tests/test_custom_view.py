@@ -20,6 +20,17 @@ class FakeClient:
         self.views = views
 
     def gql(self, query, variables=None):
+        if "customView(id:" in query:
+            lookup = (variables or {}).get("id")
+            direct = next(
+                (
+                    view
+                    for view in self.views
+                    if view["id"] == lookup or view.get("slugId") == lookup
+                ),
+                None,
+            )
+            return {"customView": direct}
         return {"customViews": {"nodes": self.views}}
 
 
@@ -54,6 +65,19 @@ class CustomViewTest(unittest.TestCase):
         with self.assertRaises(SystemExit) as error:
             custom_view.find_view(client, "Team Queue")
         self.assertIn("ambiguous", str(error.exception).casefold())
+
+    def test_view_lookup_can_use_slug_directly(self) -> None:
+        client = FakeClient(
+            [
+                {"id": "1", "name": "Team Queue Alpha", "slugId": "alpha"},
+                {"id": "2", "name": "Team Queue Beta", "slugId": "beta"},
+            ]
+        )
+
+        found = custom_view.find_view(client, "https://linear.app/example/view/beta")
+
+        self.assertEqual(found["id"], "2")
+        self.assertEqual(found["slugId"], "beta")
 
     def test_filter_explanation_includes_filter_data(self) -> None:
         explanation = custom_view.filter_explanation({"filterData": {"state": "not_completed"}})
