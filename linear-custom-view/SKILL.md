@@ -70,7 +70,7 @@ For full setup details and a ready-to-copy rules snippet, see `docs/codex-approv
 python3 scripts/custom_view.py "https://linear.app/example/view/team-queue-123abc" --env-file /path/to/.env.local
 python3 scripts/custom_view.py 123abc --json
 python3 scripts/custom_view.py 123abc --json --first --explain-filter
-python3 scripts/custom_view.py 123abc --json --first --expect-label BSG --exclude-label Maxim --skip-title-regex '^\[Maxim\]'
+python3 scripts/custom_view.py 123abc --json --first --expect-label Platform --exclude-label Blocked --skip-title-regex '^\[Blocked\]'
 python3 scripts/custom_view.py 123abc --json --include-relations-summary --limit 20
 python3 scripts/custom_view.py "Team Queue" --limit 50
 ```

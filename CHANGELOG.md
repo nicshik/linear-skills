@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Remove project-specific example labels from `linear-custom-view` docs/tests and strengthen the public repository guard.
 - Resolve direct Custom View IDs and slug IDs before falling back to workspace Custom View listing.
 
 ## 2026-05-07 - v0.2.2
