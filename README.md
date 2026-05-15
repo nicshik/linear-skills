@@ -144,6 +144,7 @@ For complete setup guidance, including how to pre-seed rules before the first ru
 - The scripts never print the API key.
 - `linear-change-status` reads the issue, resolves the target state in the issue's team, updates only when needed, then verifies.
 - `linear-change-status --dry-run` resolves the transition without updating Linear.
+- `linear-custom-view` resolves direct Custom View IDs or slug IDs through `customView(id:)` before falling back to workspace view listing.
 - `linear-custom-view` preserves the view's manual order with Linear's `manual` sort.
 
 ## Development

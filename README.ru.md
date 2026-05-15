@@ -145,6 +145,7 @@ python3 linear-custom-view/scripts/custom_view.py
 - Скрипты не печатают API-ключ.
 - `linear-change-status` сначала читает задачу, находит статус в команде этой задачи, обновляет только при необходимости и затем проверяет результат.
 - `linear-change-status --dry-run` проверяет переход без изменения Linear.
+- `linear-custom-view` сначала ищет Custom View по прямому ID или slug ID через `customView(id:)`, а затем при необходимости переходит к списку view рабочей области.
 - `linear-custom-view` сохраняет ручной порядок Linear через `manual` sort.
 
 ## Разработка

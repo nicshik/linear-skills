@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Resolve direct Custom View IDs and slug IDs before falling back to workspace Custom View listing.
+
 ## 2026-05-07 - v0.2.2
 
 - Update `certifi` minimum requirement to `2026.4.22`.
