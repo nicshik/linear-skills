@@ -16,7 +16,10 @@ Codex-навыки и небольшие Python-скрипты для прямо
 | `linear-change-status` | Меняет статус Linear-задачи и проверяет итог. |
 | `linear-comment-issue` | Добавляет один комментарий к Linear-задаче после чтения и проверки цели. |
 | `linear-create-issue` | Создаёт одну Linear-задачу после проверки команды, статуса, проекта и меток. |
+| `linear-custom-view-setup` | Проверяет и при необходимости создаёт один Custom View для команды. |
+| `linear-label-setup` | Проверяет и при необходимости создаёт метки задач в команде. |
 | `linear-read-issue` | Читает одну Linear-задачу, при необходимости с комментариями и связями, без изменений Linear. |
+| `linear-update-issue` | Обновляет одну существующую задачу после чтения и затем проверяет результат. |
 
 ## Структура
 
@@ -37,10 +40,22 @@ linear-custom-view/
   SKILL.md
   agents/openai.yaml
   scripts/custom_view.py
+linear-custom-view-setup/
+  SKILL.md
+  agents/openai.yaml
+  scripts/custom_view_setup.py
+linear-label-setup/
+  SKILL.md
+  agents/openai.yaml
+  scripts/label_setup.py
 linear-read-issue/
   SKILL.md
   agents/openai.yaml
   scripts/read_issue.py
+linear-update-issue/
+  SKILL.md
+  agents/openai.yaml
+  scripts/update_issue.py
 linear_common/
   graphql.py
 docs/
@@ -132,6 +147,8 @@ python3 linear-create-issue/scripts/create_issue.py \
   --status Backlog \
   --label Idea \
   --optional-label Product \
+  --assignee "Example User" \
+  --parent LIN-100 \
   --title "Example idea" \
   --description-file /path/to/body.md \
   --env-file /path/to/.env.local
@@ -143,6 +160,41 @@ python3 linear-create-issue/scripts/create_issue.py \
 python3 linear-comment-issue/scripts/comment_issue.py LIN-123 \
   --body-file /path/to/comment.md \
   --env-file /path/to/.env.local
+```
+
+Проверить и при необходимости создать метку в команде:
+
+```bash
+python3 linear-label-setup/scripts/label_setup.py \
+  --team LIN \
+  --label "Example label" \
+  --description "Issues for the example stream" \
+  --env-file /path/to/.env.local \
+  --dry-run
+```
+
+Обновить существующую задачу после чтения:
+
+```bash
+python3 linear-update-issue/scripts/update_issue.py LIN-123 \
+  --add-label "Example label" \
+  --assignee "Example User" \
+  --append-description-file /path/to/addition.md \
+  --env-file /path/to/.env.local \
+  --dry-run
+```
+
+Проверить и при необходимости создать Custom View:
+
+```bash
+python3 linear-custom-view-setup/scripts/custom_view_setup.py \
+  --team LIN \
+  --project "Example Project" \
+  --name "Example open work" \
+  --label "Example label" \
+  --open-only \
+  --env-file /path/to/.env.local \
+  --dry-run
 ```
 
 Проверить переход без изменения Linear:
@@ -173,6 +225,9 @@ python3 linear-change-status/scripts/change_status.py \
 - `linear-comment-issue` создаёт один комментарий после чтения и проверки целевой задачи.
 - `linear-read-issue` читает одну задачу и, если нужно, комментарии или связи без изменений Linear.
 - `linear-create-issue` создаёт одну задачу после проверки нужных метаданных и затем проверяет созданную задачу.
+- `linear-label-setup` создаёт отсутствующие метки только по явному запросу и ничего не делает с уже существующими метками.
+- `linear-update-issue` обновляет одну существующую задачу после чтения и затем проверяет результат.
+- `linear-custom-view-setup` создаёт один отсутствующий Custom View после проверки метаданных.
 
 Они не решают, какую проектную задачу брать в работу, завершена ли доставка и можно ли ставить `Done`. Такие решения должны оставаться в проектном wrapper-навыке или процессном документе. Wrapper может вызывать эти скрипты через `LINEAR_API_KEY`, `LINEAR_ENV_FILE` или `--env-file`.
 
@@ -185,7 +240,10 @@ python3 linear-change-status/scripts/change_status.py
 python3 linear-comment-issue/scripts/comment_issue.py
 python3 linear-create-issue/scripts/create_issue.py
 python3 linear-custom-view/scripts/custom_view.py
+python3 linear-custom-view-setup/scripts/custom_view_setup.py
+python3 linear-label-setup/scripts/label_setup.py
 python3 linear-read-issue/scripts/read_issue.py
+python3 linear-update-issue/scripts/update_issue.py
 ```
 
 Не разрешайте широкий префикс `python3`.
@@ -204,6 +262,11 @@ python3 linear-read-issue/scripts/read_issue.py
 - `linear-create-issue --dry-run` проверяет команду, статус, проект и метки без создания задачи.
 - `linear-comment-issue --dry-run` проверяет целевую задачу без создания комментария.
 - `linear-create-issue --optional-label` пропускает отсутствующие необязательные метки, но сохраняет ошибку для обязательных меток.
+- `linear-create-issue` может назначить ответственного и родительскую задачу после проверки их ID; отсутствующие метки он не создаёт.
+- `linear-label-setup --dry-run` проверяет команду и метки без создания меток.
+- `linear-update-issue` сначала читает задачу, затем обновляет метки, ответственного, родителя, заголовок или описание и проверяет результат.
+- `linear-update-issue --dry-run` проверяет целевое изменение без обновления Linear.
+- `linear-custom-view-setup --dry-run` проверяет команду, проект, метки и существующий Custom View без создания Custom View.
 - Все скрипты используют общий GraphQL-клиент, единое чтение API-ключа, TLS через `certifi` при наличии пакета и очистку ошибок от токенов.
 
 ## Разработка

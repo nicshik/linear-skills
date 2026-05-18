@@ -36,13 +36,16 @@ echo "== Secret scan =="
 scripts/secret_scan.sh
 
 echo "== Compile Python sources =="
-python3 -m compileall linear-change-status linear-comment-issue linear-create-issue linear-custom-view linear-read-issue linear_common tests
+python3 -m compileall linear-change-status linear-comment-issue linear-create-issue linear-custom-view linear-custom-view-setup linear-label-setup linear-read-issue linear-update-issue linear_common tests
 python3 -m py_compile \
   linear-change-status/scripts/change_status.py \
   linear-comment-issue/scripts/comment_issue.py \
   linear-create-issue/scripts/create_issue.py \
   linear-custom-view/scripts/custom_view.py \
+  linear-custom-view-setup/scripts/custom_view_setup.py \
+  linear-label-setup/scripts/label_setup.py \
   linear-read-issue/scripts/read_issue.py \
+  linear-update-issue/scripts/update_issue.py \
   linear_common/graphql.py
 
 echo "== Fixture tests =="
@@ -57,5 +60,8 @@ python3 linear-change-status/scripts/change_status.py --help >/dev/null
 python3 linear-comment-issue/scripts/comment_issue.py --help >/dev/null
 python3 linear-create-issue/scripts/create_issue.py --help >/dev/null
 python3 linear-read-issue/scripts/read_issue.py --help >/dev/null
+python3 linear-label-setup/scripts/label_setup.py --help >/dev/null
+python3 linear-update-issue/scripts/update_issue.py --help >/dev/null
+python3 linear-custom-view-setup/scripts/custom_view_setup.py --help >/dev/null
 
 echo "Validation passed."

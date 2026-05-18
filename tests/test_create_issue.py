@@ -45,6 +45,29 @@ class FakeClient:
                     ]
                 }
             }
+        if "query Users" in query:
+            return {
+                "users": {
+                    "nodes": [
+                        {
+                            "id": "user-id",
+                            "name": "Nick",
+                            "displayName": "Nick",
+                            "email": "nick@example.com",
+                        }
+                    ]
+                }
+            }
+        if "query IssueRef" in query:
+            return {
+                "issue": {
+                    "id": "parent-id",
+                    "identifier": "LIN-1",
+                    "title": "Parent",
+                    "url": "https://linear.app/example/issue/LIN-1/parent",
+                    "state": {"id": "backlog", "name": "Backlog", "type": "backlog"},
+                }
+            }
         if "mutation CreateIssue" in query:
             return {"issueCreate": {"success": True, "issue": self.issue("LIN-123")}}
         if "query Verify" in query:
@@ -61,6 +84,8 @@ class FakeClient:
             "state": {"id": "backlog", "name": "Backlog", "type": "backlog"},
             "team": {"id": "team-id", "key": "LIN", "name": "Example"},
             "project": {"id": "project-id", "name": "Example Project"},
+            "assignee": {"id": "user-id", "name": "Nick", "displayName": "Nick", "email": "nick@example.com"},
+            "parent": {"id": "parent-id", "identifier": "LIN-1", "title": "Parent"},
             "labels": {"nodes": [{"id": "idea-label", "name": "Idea"}]},
         }
 
@@ -82,6 +107,8 @@ class CreateIssueTest(unittest.TestCase):
             state,
             project,
             labels,
+            None,
+            None,
             dry_run=True,
         )
 
@@ -94,6 +121,8 @@ class CreateIssueTest(unittest.TestCase):
         state = create_issue.resolve_state(client, team["id"], "Backlog")
         project = create_issue.resolve_project(client, "Example Project")
         labels, _skipped_labels = create_issue.resolve_labels(client, team["id"], ["Idea"])
+        assignee = create_issue.resolve_user(client, "Nick")
+        parent = create_issue.resolve_issue_ref(client, "LIN-1", "Parent issue")
 
         result = create_issue.create_issue(
             client,
@@ -103,6 +132,8 @@ class CreateIssueTest(unittest.TestCase):
             state,
             project,
             labels,
+            assignee,
+            parent,
             dry_run=False,
         )
 
@@ -113,6 +144,8 @@ class CreateIssueTest(unittest.TestCase):
         self.assertEqual(create_variables["input"]["stateId"], "backlog")
         self.assertEqual(create_variables["input"]["projectId"], "project-id")
         self.assertEqual(create_variables["input"]["labelIds"], ["idea-label"])
+        self.assertEqual(create_variables["input"]["assigneeId"], "user-id")
+        self.assertEqual(create_variables["input"]["parentId"], "parent-id")
 
     def test_missing_label_is_controlled_error(self) -> None:
         with self.assertRaises(create_issue.LinearApiError) as error:

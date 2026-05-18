@@ -6,7 +6,9 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import re
 import sys
+import urllib.parse
 from pathlib import Path
 from typing import Any
 
@@ -30,6 +32,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--status", help="Target workflow state name or type.")
     parser.add_argument("--label", action="append", default=[], help="Required label name. Can be repeated.")
     parser.add_argument("--optional-label", action="append", default=[], help="Optional label name. Missing optional labels are reported and skipped. Can be repeated.")
+    parser.add_argument("--assignee", help="Assignee user ID, exact name, display name, or email.")
+    parser.add_argument("--parent", help="Parent issue key, ID, or URL.")
     parser.add_argument("--dry-run", action="store_true", help="Resolve metadata without creating the issue.")
     parser.add_argument("--json", action="store_true", help="Emit structured JSON.")
     args = parser.parse_args()
@@ -40,6 +44,19 @@ def parse_args() -> argparse.Namespace:
 
 def normalize(value: str) -> str:
     return value.casefold().strip()
+
+
+def issue_lookup_key(value: str) -> str:
+    parsed = urllib.parse.urlparse(value)
+    text = urllib.parse.unquote(parsed.path if parsed.scheme and parsed.netloc else value)
+    identifier_match = re.search(r"\b[A-Z][A-Z0-9]+-\d+\b", text, flags=re.IGNORECASE)
+    if identifier_match:
+        return identifier_match.group(0).upper()
+    if parsed.scheme and parsed.netloc:
+        path_parts = [part for part in text.split("/") if part]
+        if path_parts:
+            return path_parts[-1]
+    return value.strip()
 
 
 def read_description(args: argparse.Namespace) -> str | None:
@@ -113,6 +130,45 @@ def resolve_project(client: LinearClient, value: str | None) -> dict[str, Any] |
     return exact_match(data["projects"]["nodes"], value, ("id", "name"), "Project")
 
 
+def resolve_user(client: LinearClient, value: str | None) -> dict[str, Any] | None:
+    if not value:
+        return None
+    data = client.gql(
+        """
+        query Users {
+          users(first: 250) {
+            nodes { id name displayName email }
+          }
+        }
+        """
+    )
+    return exact_match(data["users"]["nodes"], value, ("id", "name", "displayName", "email"), "User")
+
+
+def resolve_issue_ref(client: LinearClient, value: str | None, kind: str) -> dict[str, Any] | None:
+    if not value:
+        return None
+    lookup = issue_lookup_key(value)
+    data = client.gql(
+        """
+        query IssueRef($id: String!) {
+          issue(id: $id) {
+            id
+            identifier
+            title
+            url
+            state { id name type }
+          }
+        }
+        """,
+        {"id": lookup},
+    )
+    issue = data.get("issue")
+    if not issue:
+        raise LinearApiError("not_found", f"{kind} '{lookup}' was not found.")
+    return issue
+
+
 def resolve_labels(
     client: LinearClient,
     team_id: str,
@@ -155,6 +211,8 @@ def compact_issue(issue: dict[str, Any]) -> dict[str, Any]:
         "state": issue.get("state"),
         "team": issue.get("team"),
         "project": issue.get("project"),
+        "assignee": issue.get("assignee"),
+        "parent": issue.get("parent"),
         "labels": [node["name"] for node in labels.get("nodes", []) if node.get("name")],
     }
     return compacted
@@ -168,6 +226,8 @@ ISSUE_FIELDS = """
   state { id name type }
   team { id key name }
   project { id name }
+  assignee { id name displayName email }
+  parent { id identifier title }
   labels { nodes { id name } }
 """
 
@@ -180,6 +240,8 @@ def create_issue(
     state: dict[str, Any] | None,
     project: dict[str, Any] | None,
     labels: list[dict[str, Any]],
+    assignee: dict[str, Any] | None,
+    parent: dict[str, Any] | None,
     dry_run: bool,
 ) -> dict[str, Any]:
     target = {
@@ -187,6 +249,8 @@ def create_issue(
         "state": state,
         "project": project,
         "labels": labels,
+        "assignee": assignee,
+        "parent": parent,
         "title": title,
     }
     if dry_run:
@@ -209,6 +273,10 @@ def create_issue(
         input_data["projectId"] = project["id"]
     if labels:
         input_data["labelIds"] = [label["id"] for label in labels]
+    if assignee:
+        input_data["assigneeId"] = assignee["id"]
+    if parent:
+        input_data["parentId"] = parent["id"]
 
     create_data = client.gql(
         f"""
@@ -255,6 +323,8 @@ def build_result(client: LinearClient, args: argparse.Namespace) -> dict[str, An
         optional=True,
     )
     labels = required_labels + optional_labels
+    assignee = resolve_user(client, args.assignee)
+    parent = resolve_issue_ref(client, args.parent, "Parent issue")
     result = create_issue(
         client,
         args.title,
@@ -263,6 +333,8 @@ def build_result(client: LinearClient, args: argparse.Namespace) -> dict[str, An
         state,
         project,
         labels,
+        assignee,
+        parent,
         dry_run=args.dry_run,
     )
     result["skipped_optional_labels"] = skipped_optional_labels
@@ -282,6 +354,10 @@ def emit_text_result(result: dict[str, Any]) -> None:
         print(f"status={target['state']['name']}:{target['state']['type']}")
     print(f"labels={labels}")
     print(f"skipped_optional_labels={skipped_optional_labels}")
+    if target.get("assignee"):
+        print(f"assignee={target['assignee'].get('name') or target['assignee'].get('displayName')}")
+    if target.get("parent"):
+        print(f"parent={target['parent']['identifier']}")
     if result["action"] == "dry_run":
         print("dry_run=true")
         return

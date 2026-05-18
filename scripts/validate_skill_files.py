@@ -14,7 +14,10 @@ SKILLS = (
     "linear-comment-issue",
     "linear-create-issue",
     "linear-custom-view",
+    "linear-custom-view-setup",
+    "linear-label-setup",
     "linear-read-issue",
+    "linear-update-issue",
 )
 REQUIRED_AGENT_FIELDS = ("display_name", "short_description", "default_prompt")
 
