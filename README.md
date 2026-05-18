@@ -210,6 +210,18 @@ python3 linear-update-issue/scripts/update_issue.py LIN-123 \
   --dry-run
 ```
 
+Set one issue's manual order after reading it:
+
+```bash
+python3 linear-update-issue/scripts/update_issue.py LIN-123 \
+  --sort-order -199000 \
+  --env-file /path/to/.env.local \
+  --dry-run \
+  --json
+```
+
+Preview a Custom View manual reordering by applying one `sortOrder` value per issue in the intended order, then run the same commands without `--dry-run` only after checking every payload. This changes Linear's workspace-wide manual order, so project-specific wrappers should build and verify the full identifier list before live updates.
+
 Ensure a Custom View exists:
 
 ```bash
@@ -275,7 +287,7 @@ These skills are low-level Linear helpers:
 - `linear-create-issue` creates one issue after resolving required metadata and verifying the created issue.
 - `linear-label-setup` creates missing labels only when explicitly asked, with no-op behavior for existing labels.
 - `linear-list-issues` reads scoped issue lists for metadata preflight without updating Linear.
-- `linear-update-issue` updates one existing issue after read-before-write, then verifies the result.
+- `linear-update-issue` updates one existing issue after read-before-write, including optional manual `sortOrder`, then verifies the result.
 - `linear-custom-view-setup` creates one missing Custom View after resolving metadata.
 - `linear-custom-view-update` updates one existing Custom View after read-before-write, then verifies the result.
 - `linear-relation-setup` creates one missing issue relation after reading both issues, then verifies the result.
@@ -321,8 +333,9 @@ For complete setup guidance, including how to pre-seed rules before the first ru
 - `linear-label-setup --dry-run` resolves team and labels without creating labels.
 - `linear-list-issues --without-labels` returns only issues whose `labels.nodes` list is empty.
 - `linear-list-issues --missing-label` returns issues missing at least one requested label.
-- `linear-update-issue` reads the issue before updating labels, assignee, parent, title, or description, then verifies the result.
+- `linear-update-issue` reads the issue before updating labels, assignee, parent, title, description, or `sortOrder`, then verifies the result.
 - `linear-update-issue --dry-run` resolves the target update without updating Linear.
+- `linear-update-issue --sort-order` changes Linear's shared manual issue order; use dry-run and full Custom View verification before live batch updates.
 - `linear-custom-view-setup --dry-run` resolves team, project, labels, and existing view state without creating a Custom View.
 - `linear-custom-view-update --dry-run` resolves Custom View metadata and filters without updating Linear.
 - `linear-custom-view-update` does not change manual issue ordering.

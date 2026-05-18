@@ -89,6 +89,7 @@ class UpdateIssueTest(unittest.TestCase):
             "assignee": None,
             "parent": None,
             "title": None,
+            "sort_order": None,
             "description_file": None,
             "append_description_file": None,
             "dry_run": False,
@@ -119,6 +120,22 @@ class UpdateIssueTest(unittest.TestCase):
         self.assertEqual(result["input"]["title"], "Updated title")
         self.assertNotIn("mutation", "\n".join(client.queries).casefold())
 
+    def test_sort_order_update_uses_only_sort_order_field(self) -> None:
+        client = FakeClient()
+
+        result = update_issue.update_issue(
+            client,
+            self.args(sort_order=-199000.0),
+        )
+
+        self.assertEqual(result["action"], "updated")
+        update_variables = next(
+            variables for query, variables in zip(client.queries, client.variables)
+            if "mutation UpdateIssue" in query
+        )
+        self.assertEqual(update_variables["input"], {"sortOrder": -199000.0})
+        self.assertEqual(result["target"]["sort_order"], -199000.0)
+
     def test_update_appends_description_and_verifies(self) -> None:
         client = FakeClient()
         with tempfile.NamedTemporaryFile("w", encoding="utf-8") as body:
@@ -132,6 +149,7 @@ class UpdateIssueTest(unittest.TestCase):
 
         self.assertEqual(result["action"], "updated")
         self.assertEqual(result["verified"]["description"], "Initial body\n\nAdditional body")
+        self.assertEqual(client.variables[-1]["id"], "LIN-123")
         update_variables = next(
             variables for query, variables in zip(client.queries, client.variables)
             if "mutation UpdateIssue" in query

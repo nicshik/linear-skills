@@ -45,6 +45,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--assignee", help="Assignee user ID, exact name, display name, or email.")
     parser.add_argument("--parent", help="Parent issue key, ID, or URL.")
     parser.add_argument("--title", help="Replacement issue title.")
+    parser.add_argument("--sort-order", type=float, help="Replacement manual issue sort order.")
     parser.add_argument("--description-file", help="Path to a UTF-8 Markdown replacement description.")
     parser.add_argument("--append-description-file", help="Path to UTF-8 Markdown to append to the current description.")
     parser.add_argument("--dry-run", action="store_true", help="Resolve the update without mutating Linear.")
@@ -193,6 +194,8 @@ def build_update_input(client: LinearClient, issue: dict[str, Any], args: argpar
         input_data["parentId"] = parent["id"]
     if args.title:
         input_data["title"] = args.title
+    if args.sort_order is not None:
+        input_data["sortOrder"] = args.sort_order
     if description is not None:
         input_data["description"] = description
 
@@ -203,6 +206,7 @@ def build_update_input(client: LinearClient, issue: dict[str, Any], args: argpar
         "assignee": assignee,
         "parent": parent,
         "title": args.title,
+        "sort_order": args.sort_order,
         "description_changed": description is not None,
     }
     return input_data, target
@@ -237,7 +241,7 @@ def update_issue(client: LinearClient, args: argparse.Namespace) -> dict[str, An
         {"id": before["id"], "input": input_data},
     )
     updated = normalize_issue(data["issueUpdate"]["issue"])
-    verified = read_issue(client, before["id"])
+    verified = read_issue(client, before["identifier"])
     return {
         "action": "updated",
         "target": target,
@@ -259,6 +263,8 @@ def emit_text_result(result: dict[str, Any]) -> None:
         print(f"assignee={result['target']['assignee'].get('name')}")
     if result["target"].get("parent"):
         print(f"parent={result['target']['parent'].get('identifier')}")
+    if result["target"].get("sort_order") is not None:
+        print(f"sort_order={result['target']['sort_order']}")
 
 
 def main() -> int:
