@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SKILLS = ("linear-change-status", "linear-custom-view")
+SKILLS = ("linear-change-status", "linear-custom-view", "linear-read-issue")
 REQUIRED_AGENT_FIELDS = ("display_name", "short_description", "default_prompt")
 
 

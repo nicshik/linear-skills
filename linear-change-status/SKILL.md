@@ -32,6 +32,7 @@ Prefer the official Linear MCP connector for read-only discovery. This skill is 
 ## Non-Negotiable Rules
 
 - Use `scripts/change_status.py`.
+- Use the shared GraphQL client from this repository; it resolves `LINEAR_API_KEY`, uses `certifi` for TLS when available, and redacts the token from API errors.
 - Never print the API key.
 - Do not store the API key in the skill directory.
 - Read the issue first, find the target workflow state inside the issue team, update, then verify.
@@ -75,7 +76,7 @@ python3 scripts/change_status.py --batch-file status_changes.tsv --apply-batch -
 
 - Text output: `before`, `target`, `updated` or `noop`, and `verify`.
 - `--json` output: structured fields for issue, before state, target state, action, changed flag, verified state, `completed_at`, and `error_category`.
-- Failure categories are `not_found`, `ambiguous_status`, `permission_denied`, and `network`.
+- Failure categories are `missing_api_key`, `not_found`, `ambiguous_status`, `permission_denied`, and `network`.
 - A no-op uses `action=noop` and `error_category=already_in_target`; this is a successful outcome, not a failed update.
 - On failure, show the API or validation error directly without guessing.
 

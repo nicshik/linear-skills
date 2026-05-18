@@ -14,6 +14,7 @@ The repository is intentionally generic. Project-specific queues, delivery rules
 | --- | --- |
 | `linear-change-status` | Change a Linear issue workflow state and verify the result. |
 | `linear-custom-view` | Read a Linear Custom View and return its issues in manual order. |
+| `linear-read-issue` | Read one Linear issue, with optional comments and relations, as a read-only fallback. |
 
 ## Repository Layout
 
@@ -26,6 +27,12 @@ linear-custom-view/
   SKILL.md
   agents/openai.yaml
   scripts/custom_view.py
+linear-read-issue/
+  SKILL.md
+  agents/openai.yaml
+  scripts/read_issue.py
+linear_common/
+  graphql.py
 docs/
   codex-approvals.md
 examples/
@@ -97,6 +104,14 @@ python3 linear-change-status/scripts/change_status.py LIN-123 Done \
   --env-file /path/to/.env.local
 ```
 
+Read one issue without updating Linear:
+
+```bash
+python3 linear-read-issue/scripts/read_issue.py LIN-123 \
+  --env-file /path/to/.env.local \
+  --include-comments --include-relations
+```
+
 Test a status transition without updating Linear:
 
 ```bash
@@ -122,6 +137,7 @@ These skills are low-level Linear helpers:
 
 - `linear-custom-view` reads a Custom View queue and preserves manual order.
 - `linear-change-status` performs a narrow status transition and verifies it.
+- `linear-read-issue` reads one issue and optional comments or relations without updating Linear.
 
 They do not decide which project issue should be implemented, whether delivery is complete, or whether `Done` is appropriate. Keep those decisions in a project-specific wrapper skill or process document. The wrapper can call these scripts through stable environment variables such as `LINEAR_API_KEY`, `LINEAR_ENV_FILE`, or `--env-file`.
 
@@ -132,6 +148,7 @@ The scripts call the Linear API, so Codex may ask for network approval. To avoid
 ```text
 python3 linear-change-status/scripts/change_status.py
 python3 linear-custom-view/scripts/custom_view.py
+python3 linear-read-issue/scripts/read_issue.py
 ```
 
 Do not approve broad prefixes such as `python3`.
@@ -146,6 +163,8 @@ For complete setup guidance, including how to pre-seed rules before the first ru
 - `linear-change-status --dry-run` resolves the transition without updating Linear.
 - `linear-custom-view` resolves direct Custom View IDs or slug IDs through `customView(id:)` before falling back to workspace view listing.
 - `linear-custom-view` preserves the view's manual order with Linear's `manual` sort.
+- `linear-read-issue` sends only read queries and never GraphQL mutations.
+- All scripts share one GraphQL client, API-key resolution, TLS setup through `certifi` when available, and token sanitization for error output.
 
 ## Development
 
@@ -156,7 +175,9 @@ Run syntax checks:
 ```bash
 python3 -m py_compile \
   linear-change-status/scripts/change_status.py \
-  linear-custom-view/scripts/custom_view.py
+  linear-custom-view/scripts/custom_view.py \
+  linear-read-issue/scripts/read_issue.py \
+  linear_common/graphql.py
 ```
 
 Run the local CI equivalent:
