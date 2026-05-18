@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add `linear-create-issue` as a narrow issue creation fallback with metadata resolution, dry-run, and verification.
 - Add `linear-read-issue` as a read-only issue fallback with optional comments and relations.
 - Share Linear GraphQL key loading, TLS setup, and token-safe errors across scripts.
 - Remove project-specific example labels from `linear-custom-view` docs/tests and strengthen the public repository guard.

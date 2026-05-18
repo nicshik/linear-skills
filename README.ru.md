@@ -14,6 +14,7 @@ Codex-навыки и небольшие Python-скрипты для прямо
 | --- | --- |
 | `linear-custom-view` | Читает Linear Custom View и возвращает задачи в ручном порядке Linear. |
 | `linear-change-status` | Меняет статус Linear-задачи и проверяет итог. |
+| `linear-create-issue` | Создаёт одну Linear-задачу после проверки команды, статуса, проекта и меток. |
 | `linear-read-issue` | Читает одну Linear-задачу, при необходимости с комментариями и связями, без изменений Linear. |
 
 ## Структура
@@ -23,6 +24,10 @@ linear-change-status/
   SKILL.md
   agents/openai.yaml
   scripts/change_status.py
+linear-create-issue/
+  SKILL.md
+  agents/openai.yaml
+  scripts/create_issue.py
 linear-custom-view/
   SKILL.md
   agents/openai.yaml
@@ -113,6 +118,20 @@ python3 linear-read-issue/scripts/read_issue.py LIN-123 \
   --include-comments --include-relations
 ```
 
+Создать одну задачу после проверки метаданных:
+
+```bash
+python3 linear-create-issue/scripts/create_issue.py \
+  --team LIN \
+  --project "Example Project" \
+  --status Backlog \
+  --label Idea \
+  --optional-label Product \
+  --title "Example idea" \
+  --description-file /path/to/body.md \
+  --env-file /path/to/.env.local
+```
+
 Проверить переход без изменения Linear:
 
 ```bash
@@ -139,6 +158,7 @@ python3 linear-change-status/scripts/change_status.py \
 - `linear-custom-view` читает очередь Custom View и сохраняет ручной порядок.
 - `linear-change-status` выполняет узкий переход статуса и проверяет результат.
 - `linear-read-issue` читает одну задачу и, если нужно, комментарии или связи без изменений Linear.
+- `linear-create-issue` создаёт одну задачу после проверки нужных метаданных и затем проверяет созданную задачу.
 
 Они не решают, какую проектную задачу брать в работу, завершена ли доставка и можно ли ставить `Done`. Такие решения должны оставаться в проектном wrapper-навыке или процессном документе. Wrapper может вызывать эти скрипты через `LINEAR_API_KEY`, `LINEAR_ENV_FILE` или `--env-file`.
 
@@ -148,6 +168,7 @@ python3 linear-change-status/scripts/change_status.py \
 
 ```text
 python3 linear-change-status/scripts/change_status.py
+python3 linear-create-issue/scripts/create_issue.py
 python3 linear-custom-view/scripts/custom_view.py
 python3 linear-read-issue/scripts/read_issue.py
 ```
@@ -165,6 +186,8 @@ python3 linear-read-issue/scripts/read_issue.py
 - `linear-custom-view` сначала ищет Custom View по прямому ID или slug ID через `customView(id:)`, а затем при необходимости переходит к списку view рабочей области.
 - `linear-custom-view` сохраняет ручной порядок Linear через `manual` sort.
 - `linear-read-issue` отправляет только запросы чтения и никогда не отправляет GraphQL mutations.
+- `linear-create-issue --dry-run` проверяет команду, статус, проект и метки без создания задачи.
+- `linear-create-issue --optional-label` пропускает отсутствующие необязательные метки, но сохраняет ошибку для обязательных меток.
 - Все скрипты используют общий GraphQL-клиент, единое чтение API-ключа, TLS через `certifi` при наличии пакета и очистку ошибок от токенов.
 
 ## Разработка

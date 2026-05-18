@@ -37,6 +37,7 @@ For Codex, approve only the script entrypoints:
 
 ```text
 python3 linear-change-status/scripts/change_status.py
+python3 linear-create-issue/scripts/create_issue.py
 python3 linear-custom-view/scripts/custom_view.py
 python3 linear-read-issue/scripts/read_issue.py
 ```
