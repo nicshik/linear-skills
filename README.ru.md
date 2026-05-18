@@ -211,6 +211,18 @@ python3 linear-update-issue/scripts/update_issue.py LIN-123 \
   --dry-run
 ```
 
+Задать ручное место одной задачи после чтения:
+
+```bash
+python3 linear-update-issue/scripts/update_issue.py LIN-123 \
+  --sort-order -199000 \
+  --env-file /path/to/.env.local \
+  --dry-run \
+  --json
+```
+
+Для перестановки Custom View подготовьте полный целевой список задач, назначьте каждой своё значение `sortOrder`, сначала прогоните все команды с `--dry-run`, затем повторите без `--dry-run` только после проверки payload. Это меняет общий ручной порядок Linear для рабочей области, поэтому проектный wrapper должен сам строить и проверять полный список identifiers.
+
 Проверить и при необходимости создать Custom View:
 
 ```bash
@@ -276,7 +288,7 @@ python3 linear-change-status/scripts/change_status.py \
 - `linear-create-issue` создаёт одну задачу после проверки нужных метаданных и затем проверяет созданную задачу.
 - `linear-label-setup` создаёт отсутствующие метки только по явному запросу и ничего не делает с уже существующими метками.
 - `linear-list-issues` читает списки задач для проверки метаданных без изменений Linear.
-- `linear-update-issue` обновляет одну существующую задачу после чтения и затем проверяет результат.
+- `linear-update-issue` обновляет одну существующую задачу после чтения, включая ручной `sortOrder`, и затем проверяет результат.
 - `linear-custom-view-setup` создаёт один отсутствующий Custom View после проверки метаданных.
 - `linear-custom-view-update` обновляет один существующий Custom View после чтения и затем проверяет результат.
 - `linear-relation-setup` создаёт одну отсутствующую связь между задачами после чтения обеих задач и затем проверяет результат.
@@ -322,8 +334,9 @@ python3 linear-update-issue/scripts/update_issue.py
 - `linear-label-setup --dry-run` проверяет команду и метки без создания меток.
 - `linear-list-issues --without-labels` возвращает только задачи, у которых `labels.nodes` пустой.
 - `linear-list-issues --missing-label` возвращает задачи, у которых нет хотя бы одной указанной метки.
-- `linear-update-issue` сначала читает задачу, затем обновляет метки, ответственного, родителя, заголовок или описание и проверяет результат.
+- `linear-update-issue` сначала читает задачу, затем обновляет метки, ответственного, родителя, заголовок, описание или `sortOrder` и проверяет результат.
 - `linear-update-issue --dry-run` проверяет целевое изменение без обновления Linear.
+- `linear-update-issue --sort-order` меняет общий ручной порядок задач Linear; перед живой пачкой нужен dry-run и полная проверка Custom View.
 - `linear-custom-view-setup --dry-run` проверяет команду, проект, метки и существующий Custom View без создания Custom View.
 - `linear-custom-view-update --dry-run` проверяет метаданные и фильтры Custom View без обновления Linear.
 - `linear-custom-view-update` не меняет ручной порядок задач.

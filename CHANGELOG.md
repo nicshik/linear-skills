@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Allow `linear-update-issue` to set `sortOrder` for checked manual issue ordering.
 - Add `linear-custom-view-update` for checked Custom View metadata and filter updates.
 - Add `linear-relation-setup` for checked issue relation setup covering `related`, `blocks`, and `blocked-by`.
 - Add `linear-list-issues` as a read-only issue listing fallback for migration, label cleanup, and metadata preflight.
