@@ -7,6 +7,8 @@ import sys
 import unittest
 from pathlib import Path
 
+from linear_common import graphql as linear_graphql
+
 
 SCRIPT = Path(__file__).resolve().parents[1] / "linear-change-status" / "scripts" / "change_status.py"
 SPEC = importlib.util.spec_from_file_location("change_status", SCRIPT)
@@ -83,16 +85,19 @@ class ChangeStatusTest(unittest.TestCase):
 
     def test_missing_key_error_uses_controlled_message(self) -> None:
         old = os.environ.pop("LINEAR_API_KEY", None)
-        original_candidate_env_files = change_status.candidate_env_files
-        change_status.candidate_env_files = lambda args: []
+        old_env_file = os.environ.pop("LINEAR_ENV_FILE", None)
+        original_candidate_env_files = linear_graphql.candidate_env_files
+        linear_graphql.candidate_env_files = lambda env_file=None: []
         try:
-            with self.assertRaises(SystemExit) as error:
-                change_status.resolve_api_key(type("Args", (), {"env_file": None})())
+            with self.assertRaises(change_status.LinearApiError) as error:
+                change_status.resolve_api_key(None)
             self.assertIn("LINEAR_API_KEY was not found", str(error.exception))
         finally:
-            change_status.candidate_env_files = original_candidate_env_files
+            linear_graphql.candidate_env_files = original_candidate_env_files
             if old is not None:
                 os.environ["LINEAR_API_KEY"] = old
+            if old_env_file is not None:
+                os.environ["LINEAR_ENV_FILE"] = old_env_file
 
 
 if __name__ == "__main__":

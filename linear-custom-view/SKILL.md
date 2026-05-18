@@ -32,6 +32,7 @@ This skill is useful when Linear MCP cannot read custom views or when the view's
 ## Non-Negotiable Rules
 
 - Use `scripts/custom_view.py`.
+- Use the shared GraphQL client from this repository; it resolves `LINEAR_API_KEY`, uses `certifi` for TLS when available, and redacts the token from API errors.
 - Preserve manual order with `sort: [{ manual: { order: Ascending } }]` unless the user asks otherwise.
 - Never print the API key.
 - Treat the Custom View filter as the source of truth. Do not add hidden filters unless the user asks.

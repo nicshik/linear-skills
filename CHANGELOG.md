@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add `linear-read-issue` as a read-only issue fallback with optional comments and relations.
+- Share Linear GraphQL key loading, TLS setup, and token-safe errors across scripts.
 - Remove project-specific example labels from `linear-custom-view` docs/tests and strengthen the public repository guard.
 - Resolve direct Custom View IDs and slug IDs before falling back to workspace Custom View listing.
 

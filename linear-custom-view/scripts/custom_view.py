@@ -6,19 +6,18 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
-import os
 import re
-import ssl
 import sys
-import urllib.error
 import urllib.parse
-import urllib.request
 from pathlib import Path
 from typing import Any
 
 
-API_URL = "https://api.linear.app/graphql"
-ENV_KEY = "LINEAR_API_KEY"
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from linear_common.graphql import API_URL, LinearApiError, LinearClient, resolve_api_key
 
 
 def parse_args() -> argparse.Namespace:
@@ -74,106 +73,6 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--json", action="store_true", help="Emit structured JSON.")
     return parser.parse_args()
-
-
-def parse_env_file(path: Path) -> dict[str, str]:
-    values: dict[str, str] = {}
-    try:
-        content = path.read_text(encoding="utf-8")
-    except OSError:
-        return values
-
-    for raw_line in content.splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        if line.startswith("export "):
-            line = line.removeprefix("export ").strip()
-        key, value = line.split("=", 1)
-        key = key.strip()
-        value = value.strip().strip('"').strip("'")
-        if key:
-            values[key] = value
-    return values
-
-
-def candidate_env_files(args: argparse.Namespace) -> list[Path]:
-    paths: list[Path] = []
-    if args.env_file:
-        paths.append(Path(args.env_file).expanduser())
-    if os.environ.get("LINEAR_ENV_FILE"):
-        paths.append(Path(os.environ["LINEAR_ENV_FILE"]).expanduser())
-
-    cwd = Path.cwd()
-    for base in [cwd, *cwd.parents]:
-        paths.extend([base / ".env.local", base / ".env"])
-
-    paths.append(cwd / "app" / ".env.local")
-
-    deduped: list[Path] = []
-    seen: set[Path] = set()
-    for path in paths:
-        resolved = path.resolve() if path.exists() else path
-        if resolved not in seen:
-            seen.add(resolved)
-            deduped.append(path)
-    return deduped
-
-
-def resolve_api_key(args: argparse.Namespace) -> str:
-    token = os.environ.get(ENV_KEY)
-    if token:
-        return token
-
-    for path in candidate_env_files(args):
-        values = parse_env_file(path)
-        token = values.get(ENV_KEY)
-        if token:
-            return token
-
-    raise SystemExit(
-        "LINEAR_API_KEY was not found in the environment, LINEAR_ENV_FILE, --env-file, "
-        "or local .env files."
-    )
-
-
-class LinearClient:
-    def __init__(self, api_url: str, token: str) -> None:
-        self.api_url = api_url
-        self.token = token
-
-    def gql(self, query: str, variables: dict[str, Any] | None = None) -> dict[str, Any]:
-        body = json.dumps({"query": query, "variables": variables or {}}).encode("utf-8")
-        request = urllib.request.Request(
-            self.api_url,
-            data=body,
-            method="POST",
-            headers={
-                "Authorization": self.token,
-                "Content-Type": "application/json",
-            },
-        )
-        try:
-            with urllib.request.urlopen(request, context=build_ssl_context()) as response:
-                payload = json.loads(response.read().decode("utf-8"))
-        except urllib.error.HTTPError as exc:
-            detail = exc.read().decode("utf-8", errors="replace")
-            raise SystemExit(f"Linear API HTTP {exc.code}: {detail}") from exc
-        except urllib.error.URLError as exc:
-            raise SystemExit(f"Linear API request failed: {exc.reason}") from exc
-
-        if payload.get("errors"):
-            raise SystemExit(json.dumps(payload["errors"], ensure_ascii=False, indent=2))
-        return payload["data"]
-
-
-def build_ssl_context() -> ssl.SSLContext:
-    try:
-        import certifi  # type: ignore[import-not-found]
-
-        return ssl.create_default_context(cafile=certifi.where())
-    except Exception:
-        return ssl.create_default_context()
 
 
 def normalize(value: str) -> str:
@@ -518,17 +417,20 @@ def filter_explanation(view: dict[str, Any]) -> dict[str, Any]:
 
 def main() -> int:
     args = parse_args()
-    client = LinearClient(args.api_url, resolve_api_key(args))
-    view = find_view(client, args.view)
-    filters_active = selection_filters_active(args)
-    full_view, issues = fetch_issues(
-        client,
-        view["id"],
-        args.limit,
-        args.order,
-        args.include_relations_summary,
-        include_labels=filters_active,
-    )
+    try:
+        client = LinearClient(args.api_url, resolve_api_key(args.env_file))
+        view = find_view(client, args.view)
+        filters_active = selection_filters_active(args)
+        full_view, issues = fetch_issues(
+            client,
+            view["id"],
+            args.limit,
+            args.order,
+            args.include_relations_summary,
+            include_labels=filters_active,
+        )
+    except LinearApiError as exc:
+        raise SystemExit(exc.message) from exc
     fetched_at = dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
     result = {
