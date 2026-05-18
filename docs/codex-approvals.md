@@ -8,7 +8,10 @@ It is based on the setup used for:
 - `linear-comment-issue`
 - `linear-create-issue`
 - `linear-custom-view`
+- `linear-custom-view-setup`
+- `linear-label-setup`
 - `linear-read-issue`
+- `linear-update-issue`
 
 ## Why Prompts Appear
 
@@ -27,7 +30,10 @@ prefix_rule(pattern=["python3", "linear-change-status/scripts/change_status.py"]
 prefix_rule(pattern=["python3", "linear-comment-issue/scripts/comment_issue.py"], decision="allow")
 prefix_rule(pattern=["python3", "linear-create-issue/scripts/create_issue.py"], decision="allow")
 prefix_rule(pattern=["python3", "linear-custom-view/scripts/custom_view.py"], decision="allow")
+prefix_rule(pattern=["python3", "linear-custom-view-setup/scripts/custom_view_setup.py"], decision="allow")
+prefix_rule(pattern=["python3", "linear-label-setup/scripts/label_setup.py"], decision="allow")
 prefix_rule(pattern=["python3", "linear-read-issue/scripts/read_issue.py"], decision="allow")
+prefix_rule(pattern=["python3", "linear-update-issue/scripts/update_issue.py"], decision="allow")
 ```
 
 These rules allow commands that start with the exact script path, for example:
@@ -37,7 +43,10 @@ python3 linear-change-status/scripts/change_status.py LIN-123 Done --env-file /p
 python3 linear-comment-issue/scripts/comment_issue.py LIN-123 --body "Example comment" --dry-run
 python3 linear-create-issue/scripts/create_issue.py --team LIN --title "Example issue" --dry-run
 python3 linear-custom-view/scripts/custom_view.py https://linear.app/example/view/example-123 --limit 10
+python3 linear-custom-view-setup/scripts/custom_view_setup.py --team LIN --name "Example view" --dry-run
+python3 linear-label-setup/scripts/label_setup.py --team LIN --label Example --dry-run
 python3 linear-read-issue/scripts/read_issue.py LIN-123 --include-comments
+python3 linear-update-issue/scripts/update_issue.py LIN-123 --add-label Example --dry-run
 ```
 
 They do not allow arbitrary Python commands such as:
@@ -62,7 +71,10 @@ The approval request should use one of these `prefix_rule` values:
 ["python3", "linear-comment-issue/scripts/comment_issue.py"]
 ["python3", "linear-create-issue/scripts/create_issue.py"]
 ["python3", "linear-custom-view/scripts/custom_view.py"]
+["python3", "linear-custom-view-setup/scripts/custom_view_setup.py"]
+["python3", "linear-label-setup/scripts/label_setup.py"]
 ["python3", "linear-read-issue/scripts/read_issue.py"]
+["python3", "linear-update-issue/scripts/update_issue.py"]
 ```
 
 If Codex asks for a broader prefix such as `["python3"]`, do not approve it. Re-run the command with a narrower `prefix_rule`.
@@ -84,7 +96,10 @@ prefix_rule(pattern=["python3", "linear-change-status/scripts/change_status.py"]
 prefix_rule(pattern=["python3", "linear-comment-issue/scripts/comment_issue.py"], decision="allow")
 prefix_rule(pattern=["python3", "linear-create-issue/scripts/create_issue.py"], decision="allow")
 prefix_rule(pattern=["python3", "linear-custom-view/scripts/custom_view.py"], decision="allow")
+prefix_rule(pattern=["python3", "linear-custom-view-setup/scripts/custom_view_setup.py"], decision="allow")
+prefix_rule(pattern=["python3", "linear-label-setup/scripts/label_setup.py"], decision="allow")
 prefix_rule(pattern=["python3", "linear-read-issue/scripts/read_issue.py"], decision="allow")
+prefix_rule(pattern=["python3", "linear-update-issue/scripts/update_issue.py"], decision="allow")
 ```
 
 Then restart the Codex session so the rules are loaded.
@@ -147,10 +162,13 @@ python3 linear-custom-view/scripts/custom_view.py https://linear.app/example/vie
 python3 linear-change-status/scripts/change_status.py LIN-123 Done --env-file /path/to/.env.local --dry-run
 python3 linear-comment-issue/scripts/comment_issue.py LIN-123 --body "Example comment" --env-file /path/to/.env.local --dry-run
 python3 linear-create-issue/scripts/create_issue.py --team LIN --status Backlog --title "Example issue" --env-file /path/to/.env.local --dry-run
+python3 linear-label-setup/scripts/label_setup.py --team LIN --label Example --env-file /path/to/.env.local --dry-run
+python3 linear-update-issue/scripts/update_issue.py LIN-123 --add-label Example --env-file /path/to/.env.local --dry-run
+python3 linear-custom-view-setup/scripts/custom_view_setup.py --team LIN --name "Example view" --label Example --env-file /path/to/.env.local --dry-run
 python3 linear-read-issue/scripts/read_issue.py LIN-123 --env-file /path/to/.env.local
 ```
 
-Use `--dry-run` for status changes, comments, and issue creation when testing. It reads the issue or resolves metadata without updating Linear. `linear-read-issue` is read-only by design.
+Use `--dry-run` for status changes, comments, issue creation, label setup, issue updates, and Custom View setup when testing. It reads the issue or resolves metadata without updating Linear. `linear-read-issue` is read-only by design.
 
 ## Troubleshooting
 

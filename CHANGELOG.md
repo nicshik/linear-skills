@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Add `linear-label-setup` for explicit issue label setup with dry-run and no-op behavior.
+- Add `linear-update-issue` for checked issue updates covering labels, assignee, parent, title, and description.
+- Add `linear-custom-view-setup` for checked Custom View creation after metadata resolution.
+- Allow `linear-create-issue` to set assignee and parent while keeping missing-label setup separate.
 - Add `linear-comment-issue` as a narrow comment fallback with issue resolution, dry-run, and verification.
 - Add `linear-create-issue` as a narrow issue creation fallback with metadata resolution, dry-run, and verification.
 - Add `linear-read-issue` as a read-only issue fallback with optional comments and relations.

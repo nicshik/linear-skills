@@ -16,7 +16,10 @@ The repository is intentionally generic. Project-specific queues, delivery rules
 | `linear-comment-issue` | Add one comment to a Linear issue after reading and verifying the target issue. |
 | `linear-create-issue` | Create one Linear issue after resolving target team, status, project, and labels. |
 | `linear-custom-view` | Read a Linear Custom View and return its issues in manual order. |
+| `linear-custom-view-setup` | Ensure one team Custom View exists after resolving team, project, and labels. |
+| `linear-label-setup` | Ensure issue labels exist in a team, with dry-run and no-op behavior. |
 | `linear-read-issue` | Read one Linear issue, with optional comments and relations, as a read-only fallback. |
+| `linear-update-issue` | Update one existing issue after a read-before-write check and verify the result. |
 
 ## Repository Layout
 
@@ -37,10 +40,22 @@ linear-custom-view/
   SKILL.md
   agents/openai.yaml
   scripts/custom_view.py
+linear-custom-view-setup/
+  SKILL.md
+  agents/openai.yaml
+  scripts/custom_view_setup.py
+linear-label-setup/
+  SKILL.md
+  agents/openai.yaml
+  scripts/label_setup.py
 linear-read-issue/
   SKILL.md
   agents/openai.yaml
   scripts/read_issue.py
+linear-update-issue/
+  SKILL.md
+  agents/openai.yaml
+  scripts/update_issue.py
 linear_common/
   graphql.py
 docs/
@@ -131,6 +146,8 @@ python3 linear-create-issue/scripts/create_issue.py \
   --status Backlog \
   --label Idea \
   --optional-label Product \
+  --assignee "Example User" \
+  --parent LIN-100 \
   --title "Example idea" \
   --description-file /path/to/body.md \
   --env-file /path/to/.env.local
@@ -142,6 +159,41 @@ Add one comment after verifying the target issue:
 python3 linear-comment-issue/scripts/comment_issue.py LIN-123 \
   --body-file /path/to/comment.md \
   --env-file /path/to/.env.local
+```
+
+Ensure issue labels exist in a team:
+
+```bash
+python3 linear-label-setup/scripts/label_setup.py \
+  --team LIN \
+  --label "Example label" \
+  --description "Issues for the example stream" \
+  --env-file /path/to/.env.local \
+  --dry-run
+```
+
+Update an existing issue after reading it:
+
+```bash
+python3 linear-update-issue/scripts/update_issue.py LIN-123 \
+  --add-label "Example label" \
+  --assignee "Example User" \
+  --append-description-file /path/to/addition.md \
+  --env-file /path/to/.env.local \
+  --dry-run
+```
+
+Ensure a Custom View exists:
+
+```bash
+python3 linear-custom-view-setup/scripts/custom_view_setup.py \
+  --team LIN \
+  --project "Example Project" \
+  --name "Example open work" \
+  --label "Example label" \
+  --open-only \
+  --env-file /path/to/.env.local \
+  --dry-run
 ```
 
 Test a status transition without updating Linear:
@@ -172,6 +224,9 @@ These skills are low-level Linear helpers:
 - `linear-comment-issue` creates one issue comment after reading and verifying the target issue.
 - `linear-read-issue` reads one issue and optional comments or relations without updating Linear.
 - `linear-create-issue` creates one issue after resolving required metadata and verifying the created issue.
+- `linear-label-setup` creates missing labels only when explicitly asked, with no-op behavior for existing labels.
+- `linear-update-issue` updates one existing issue after read-before-write, then verifies the result.
+- `linear-custom-view-setup` creates one missing Custom View after resolving metadata.
 
 They do not decide which project issue should be implemented, whether delivery is complete, or whether `Done` is appropriate. Keep those decisions in a project-specific wrapper skill or process document. The wrapper can call these scripts through stable environment variables such as `LINEAR_API_KEY`, `LINEAR_ENV_FILE`, or `--env-file`.
 
@@ -184,7 +239,10 @@ python3 linear-change-status/scripts/change_status.py
 python3 linear-comment-issue/scripts/comment_issue.py
 python3 linear-create-issue/scripts/create_issue.py
 python3 linear-custom-view/scripts/custom_view.py
+python3 linear-custom-view-setup/scripts/custom_view_setup.py
+python3 linear-label-setup/scripts/label_setup.py
 python3 linear-read-issue/scripts/read_issue.py
+python3 linear-update-issue/scripts/update_issue.py
 ```
 
 Do not approve broad prefixes such as `python3`.
@@ -203,6 +261,11 @@ For complete setup guidance, including how to pre-seed rules before the first ru
 - `linear-create-issue --dry-run` resolves team, status, project, and labels without creating an issue.
 - `linear-comment-issue --dry-run` resolves the target issue without creating a comment.
 - `linear-create-issue --optional-label` skips missing optional labels while preserving required-label failures.
+- `linear-create-issue` can assign a user and parent issue after resolving both IDs; it does not create missing labels.
+- `linear-label-setup --dry-run` resolves team and labels without creating labels.
+- `linear-update-issue` reads the issue before updating labels, assignee, parent, title, or description, then verifies the result.
+- `linear-update-issue --dry-run` resolves the target update without updating Linear.
+- `linear-custom-view-setup --dry-run` resolves team, project, labels, and existing view state without creating a Custom View.
 - All scripts share one GraphQL client, API-key resolution, TLS setup through `certifi` when available, and token sanitization for error output.
 
 ## Development
@@ -217,7 +280,10 @@ python3 -m py_compile \
   linear-comment-issue/scripts/comment_issue.py \
   linear-create-issue/scripts/create_issue.py \
   linear-custom-view/scripts/custom_view.py \
+  linear-custom-view-setup/scripts/custom_view_setup.py \
+  linear-label-setup/scripts/label_setup.py \
   linear-read-issue/scripts/read_issue.py \
+  linear-update-issue/scripts/update_issue.py \
   linear_common/graphql.py
 ```
 
