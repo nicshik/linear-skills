@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add `linear-list-issues` as a read-only issue listing fallback for migration, label cleanup, and metadata preflight.
 - Add `linear-label-setup` for explicit issue label setup with dry-run and no-op behavior.
 - Add `linear-update-issue` for checked issue updates covering labels, assignee, parent, title, and description.
 - Add `linear-custom-view-setup` for checked Custom View creation after metadata resolution.

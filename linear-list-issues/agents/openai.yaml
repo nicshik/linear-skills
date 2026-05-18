@@ -1,0 +1,8 @@
+interface:
+  display_name: "Linear List Issues"
+  short_description: "Read filtered Linear issue lists"
+  brand_color: "#5E6AD2"
+  default_prompt: "Use $linear-list-issues as a read-only fallback to list Linear issues through the direct Linear API, scope queries with team/project where possible, and never print the API key."
+
+policy:
+  allow_implicit_invocation: false

@@ -16,6 +16,7 @@ SKILLS = (
     "linear-custom-view",
     "linear-custom-view-setup",
     "linear-label-setup",
+    "linear-list-issues",
     "linear-read-issue",
     "linear-update-issue",
 )
