@@ -18,6 +18,7 @@ The repository is intentionally generic. Project-specific queues, delivery rules
 | `linear-custom-view` | Read a Linear Custom View and return its issues in manual order. |
 | `linear-custom-view-setup` | Ensure one team Custom View exists after resolving team, project, and labels. |
 | `linear-label-setup` | Ensure issue labels exist in a team, with dry-run and no-op behavior. |
+| `linear-list-issues` | Read filtered issue lists for migration, label cleanup, and metadata preflight. |
 | `linear-read-issue` | Read one Linear issue, with optional comments and relations, as a read-only fallback. |
 | `linear-update-issue` | Update one existing issue after a read-before-write check and verify the result. |
 
@@ -48,6 +49,10 @@ linear-label-setup/
   SKILL.md
   agents/openai.yaml
   scripts/label_setup.py
+linear-list-issues/
+  SKILL.md
+  agents/openai.yaml
+  scripts/list_issues.py
 linear-read-issue/
   SKILL.md
   agents/openai.yaml
@@ -135,6 +140,18 @@ Read one issue without updating Linear:
 python3 linear-read-issue/scripts/read_issue.py LIN-123 \
   --env-file /path/to/.env.local \
   --include-comments --include-relations
+```
+
+List open issues with no labels:
+
+```bash
+python3 linear-list-issues/scripts/list_issues.py \
+  --team LIN \
+  --project "Example Project" \
+  --open-only \
+  --without-labels \
+  --env-file /path/to/.env.local \
+  --json
 ```
 
 Create one issue after verifying metadata:
@@ -225,6 +242,7 @@ These skills are low-level Linear helpers:
 - `linear-read-issue` reads one issue and optional comments or relations without updating Linear.
 - `linear-create-issue` creates one issue after resolving required metadata and verifying the created issue.
 - `linear-label-setup` creates missing labels only when explicitly asked, with no-op behavior for existing labels.
+- `linear-list-issues` reads scoped issue lists for metadata preflight without updating Linear.
 - `linear-update-issue` updates one existing issue after read-before-write, then verifies the result.
 - `linear-custom-view-setup` creates one missing Custom View after resolving metadata.
 
@@ -241,6 +259,7 @@ python3 linear-create-issue/scripts/create_issue.py
 python3 linear-custom-view/scripts/custom_view.py
 python3 linear-custom-view-setup/scripts/custom_view_setup.py
 python3 linear-label-setup/scripts/label_setup.py
+python3 linear-list-issues/scripts/list_issues.py
 python3 linear-read-issue/scripts/read_issue.py
 python3 linear-update-issue/scripts/update_issue.py
 ```
@@ -258,11 +277,14 @@ For complete setup guidance, including how to pre-seed rules before the first ru
 - `linear-custom-view` resolves direct Custom View IDs or slug IDs through `customView(id:)` before falling back to workspace view listing.
 - `linear-custom-view` preserves the view's manual order with Linear's `manual` sort.
 - `linear-read-issue` sends only read queries and never GraphQL mutations.
+- `linear-list-issues` sends only read queries and never GraphQL mutations.
 - `linear-create-issue --dry-run` resolves team, status, project, and labels without creating an issue.
 - `linear-comment-issue --dry-run` resolves the target issue without creating a comment.
 - `linear-create-issue --optional-label` skips missing optional labels while preserving required-label failures.
 - `linear-create-issue` can assign a user and parent issue after resolving both IDs; it does not create missing labels.
 - `linear-label-setup --dry-run` resolves team and labels without creating labels.
+- `linear-list-issues --without-labels` returns only issues whose `labels.nodes` list is empty.
+- `linear-list-issues --missing-label` returns issues missing at least one requested label.
 - `linear-update-issue` reads the issue before updating labels, assignee, parent, title, or description, then verifies the result.
 - `linear-update-issue --dry-run` resolves the target update without updating Linear.
 - `linear-custom-view-setup --dry-run` resolves team, project, labels, and existing view state without creating a Custom View.
@@ -282,6 +304,7 @@ python3 -m py_compile \
   linear-custom-view/scripts/custom_view.py \
   linear-custom-view-setup/scripts/custom_view_setup.py \
   linear-label-setup/scripts/label_setup.py \
+  linear-list-issues/scripts/list_issues.py \
   linear-read-issue/scripts/read_issue.py \
   linear-update-issue/scripts/update_issue.py \
   linear_common/graphql.py

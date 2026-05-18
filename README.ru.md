@@ -18,6 +18,7 @@ Codex-навыки и небольшие Python-скрипты для прямо
 | `linear-create-issue` | Создаёт одну Linear-задачу после проверки команды, статуса, проекта и меток. |
 | `linear-custom-view-setup` | Проверяет и при необходимости создаёт один Custom View для команды. |
 | `linear-label-setup` | Проверяет и при необходимости создаёт метки задач в команде. |
+| `linear-list-issues` | Читает отфильтрованные списки задач для миграций, разметки и проверки метаданных. |
 | `linear-read-issue` | Читает одну Linear-задачу, при необходимости с комментариями и связями, без изменений Linear. |
 | `linear-update-issue` | Обновляет одну существующую задачу после чтения и затем проверяет результат. |
 
@@ -48,6 +49,10 @@ linear-label-setup/
   SKILL.md
   agents/openai.yaml
   scripts/label_setup.py
+linear-list-issues/
+  SKILL.md
+  agents/openai.yaml
+  scripts/list_issues.py
 linear-read-issue/
   SKILL.md
   agents/openai.yaml
@@ -138,6 +143,18 @@ python3 linear-read-issue/scripts/read_issue.py LIN-123 \
   --include-comments --include-relations
 ```
 
+Найти открытые задачи без меток:
+
+```bash
+python3 linear-list-issues/scripts/list_issues.py \
+  --team LIN \
+  --project "Example Project" \
+  --open-only \
+  --without-labels \
+  --env-file /path/to/.env.local \
+  --json
+```
+
 Создать одну задачу после проверки метаданных:
 
 ```bash
@@ -226,6 +243,7 @@ python3 linear-change-status/scripts/change_status.py \
 - `linear-read-issue` читает одну задачу и, если нужно, комментарии или связи без изменений Linear.
 - `linear-create-issue` создаёт одну задачу после проверки нужных метаданных и затем проверяет созданную задачу.
 - `linear-label-setup` создаёт отсутствующие метки только по явному запросу и ничего не делает с уже существующими метками.
+- `linear-list-issues` читает списки задач для проверки метаданных без изменений Linear.
 - `linear-update-issue` обновляет одну существующую задачу после чтения и затем проверяет результат.
 - `linear-custom-view-setup` создаёт один отсутствующий Custom View после проверки метаданных.
 
@@ -242,6 +260,7 @@ python3 linear-create-issue/scripts/create_issue.py
 python3 linear-custom-view/scripts/custom_view.py
 python3 linear-custom-view-setup/scripts/custom_view_setup.py
 python3 linear-label-setup/scripts/label_setup.py
+python3 linear-list-issues/scripts/list_issues.py
 python3 linear-read-issue/scripts/read_issue.py
 python3 linear-update-issue/scripts/update_issue.py
 ```
@@ -259,11 +278,14 @@ python3 linear-update-issue/scripts/update_issue.py
 - `linear-custom-view` сначала ищет Custom View по прямому ID или slug ID через `customView(id:)`, а затем при необходимости переходит к списку view рабочей области.
 - `linear-custom-view` сохраняет ручной порядок Linear через `manual` sort.
 - `linear-read-issue` отправляет только запросы чтения и никогда не отправляет GraphQL mutations.
+- `linear-list-issues` отправляет только запросы чтения и никогда не отправляет GraphQL mutations.
 - `linear-create-issue --dry-run` проверяет команду, статус, проект и метки без создания задачи.
 - `linear-comment-issue --dry-run` проверяет целевую задачу без создания комментария.
 - `linear-create-issue --optional-label` пропускает отсутствующие необязательные метки, но сохраняет ошибку для обязательных меток.
 - `linear-create-issue` может назначить ответственного и родительскую задачу после проверки их ID; отсутствующие метки он не создаёт.
 - `linear-label-setup --dry-run` проверяет команду и метки без создания меток.
+- `linear-list-issues --without-labels` возвращает только задачи, у которых `labels.nodes` пустой.
+- `linear-list-issues --missing-label` возвращает задачи, у которых нет хотя бы одной указанной метки.
 - `linear-update-issue` сначала читает задачу, затем обновляет метки, ответственного, родителя, заголовок или описание и проверяет результат.
 - `linear-update-issue --dry-run` проверяет целевое изменение без обновления Linear.
 - `linear-custom-view-setup --dry-run` проверяет команду, проект, метки и существующий Custom View без создания Custom View.
