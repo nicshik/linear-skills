@@ -13,6 +13,7 @@ The repository is intentionally generic. Project-specific queues, delivery rules
 | Skill | Purpose |
 | --- | --- |
 | `linear-change-status` | Change a Linear issue workflow state and verify the result. |
+| `linear-comment-issue` | Add one comment to a Linear issue after reading and verifying the target issue. |
 | `linear-create-issue` | Create one Linear issue after resolving target team, status, project, and labels. |
 | `linear-custom-view` | Read a Linear Custom View and return its issues in manual order. |
 | `linear-read-issue` | Read one Linear issue, with optional comments and relations, as a read-only fallback. |
@@ -24,6 +25,10 @@ linear-change-status/
   SKILL.md
   agents/openai.yaml
   scripts/change_status.py
+linear-comment-issue/
+  SKILL.md
+  agents/openai.yaml
+  scripts/comment_issue.py
 linear-create-issue/
   SKILL.md
   agents/openai.yaml
@@ -131,6 +136,14 @@ python3 linear-create-issue/scripts/create_issue.py \
   --env-file /path/to/.env.local
 ```
 
+Add one comment after verifying the target issue:
+
+```bash
+python3 linear-comment-issue/scripts/comment_issue.py LIN-123 \
+  --body-file /path/to/comment.md \
+  --env-file /path/to/.env.local
+```
+
 Test a status transition without updating Linear:
 
 ```bash
@@ -156,6 +169,7 @@ These skills are low-level Linear helpers:
 
 - `linear-custom-view` reads a Custom View queue and preserves manual order.
 - `linear-change-status` performs a narrow status transition and verifies it.
+- `linear-comment-issue` creates one issue comment after reading and verifying the target issue.
 - `linear-read-issue` reads one issue and optional comments or relations without updating Linear.
 - `linear-create-issue` creates one issue after resolving required metadata and verifying the created issue.
 
@@ -167,6 +181,7 @@ The scripts call the Linear API, so Codex may ask for network approval. To avoid
 
 ```text
 python3 linear-change-status/scripts/change_status.py
+python3 linear-comment-issue/scripts/comment_issue.py
 python3 linear-create-issue/scripts/create_issue.py
 python3 linear-custom-view/scripts/custom_view.py
 python3 linear-read-issue/scripts/read_issue.py
@@ -186,6 +201,7 @@ For complete setup guidance, including how to pre-seed rules before the first ru
 - `linear-custom-view` preserves the view's manual order with Linear's `manual` sort.
 - `linear-read-issue` sends only read queries and never GraphQL mutations.
 - `linear-create-issue --dry-run` resolves team, status, project, and labels without creating an issue.
+- `linear-comment-issue --dry-run` resolves the target issue without creating a comment.
 - `linear-create-issue --optional-label` skips missing optional labels while preserving required-label failures.
 - All scripts share one GraphQL client, API-key resolution, TLS setup through `certifi` when available, and token sanitization for error output.
 
@@ -198,6 +214,7 @@ Run syntax checks:
 ```bash
 python3 -m py_compile \
   linear-change-status/scripts/change_status.py \
+  linear-comment-issue/scripts/comment_issue.py \
   linear-create-issue/scripts/create_issue.py \
   linear-custom-view/scripts/custom_view.py \
   linear-read-issue/scripts/read_issue.py \
