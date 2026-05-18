@@ -17,9 +17,11 @@ Codex-навыки и небольшие Python-скрипты для прямо
 | `linear-comment-issue` | Добавляет один комментарий к Linear-задаче после чтения и проверки цели. |
 | `linear-create-issue` | Создаёт одну Linear-задачу после проверки команды, статуса, проекта и меток. |
 | `linear-custom-view-setup` | Проверяет и при необходимости создаёт один Custom View для команды. |
+| `linear-custom-view-update` | Обновляет один существующий Custom View после чтения и проверки метаданных. |
 | `linear-label-setup` | Проверяет и при необходимости создаёт метки задач в команде. |
 | `linear-list-issues` | Читает отфильтрованные списки задач для миграций, разметки и проверки метаданных. |
 | `linear-read-issue` | Читает одну Linear-задачу, при необходимости с комментариями и связями, без изменений Linear. |
+| `linear-relation-setup` | Проверяет и при необходимости создаёт связь между двумя Linear-задачами. |
 | `linear-update-issue` | Обновляет одну существующую задачу после чтения и затем проверяет результат. |
 
 ## Структура
@@ -45,6 +47,10 @@ linear-custom-view-setup/
   SKILL.md
   agents/openai.yaml
   scripts/custom_view_setup.py
+linear-custom-view-update/
+  SKILL.md
+  agents/openai.yaml
+  scripts/custom_view_update.py
 linear-label-setup/
   SKILL.md
   agents/openai.yaml
@@ -57,6 +63,10 @@ linear-read-issue/
   SKILL.md
   agents/openai.yaml
   scripts/read_issue.py
+linear-relation-setup/
+  SKILL.md
+  agents/openai.yaml
+  scripts/relation_setup.py
 linear-update-issue/
   SKILL.md
   agents/openai.yaml
@@ -214,6 +224,28 @@ python3 linear-custom-view-setup/scripts/custom_view_setup.py \
   --dry-run
 ```
 
+Обновить существующий Custom View после чтения:
+
+```bash
+python3 linear-custom-view-update/scripts/custom_view_update.py \
+  "Example open work" \
+  --team LIN \
+  --label "Example label" \
+  --status Backlog \
+  --open-only \
+  --env-file /path/to/.env.local \
+  --dry-run
+```
+
+Проверить и при необходимости создать связь между задачами:
+
+```bash
+python3 linear-relation-setup/scripts/relation_setup.py LIN-123 LIN-100 \
+  --type related \
+  --env-file /path/to/.env.local \
+  --dry-run
+```
+
 Проверить переход без изменения Linear:
 
 ```bash
@@ -246,6 +278,8 @@ python3 linear-change-status/scripts/change_status.py \
 - `linear-list-issues` читает списки задач для проверки метаданных без изменений Linear.
 - `linear-update-issue` обновляет одну существующую задачу после чтения и затем проверяет результат.
 - `linear-custom-view-setup` создаёт один отсутствующий Custom View после проверки метаданных.
+- `linear-custom-view-update` обновляет один существующий Custom View после чтения и затем проверяет результат.
+- `linear-relation-setup` создаёт одну отсутствующую связь между задачами после чтения обеих задач и затем проверяет результат.
 
 Они не решают, какую проектную задачу брать в работу, завершена ли доставка и можно ли ставить `Done`. Такие решения должны оставаться в проектном wrapper-навыке или процессном документе. Wrapper может вызывать эти скрипты через `LINEAR_API_KEY`, `LINEAR_ENV_FILE` или `--env-file`.
 
@@ -259,9 +293,11 @@ python3 linear-comment-issue/scripts/comment_issue.py
 python3 linear-create-issue/scripts/create_issue.py
 python3 linear-custom-view/scripts/custom_view.py
 python3 linear-custom-view-setup/scripts/custom_view_setup.py
+python3 linear-custom-view-update/scripts/custom_view_update.py
 python3 linear-label-setup/scripts/label_setup.py
 python3 linear-list-issues/scripts/list_issues.py
 python3 linear-read-issue/scripts/read_issue.py
+python3 linear-relation-setup/scripts/relation_setup.py
 python3 linear-update-issue/scripts/update_issue.py
 ```
 
@@ -289,6 +325,10 @@ python3 linear-update-issue/scripts/update_issue.py
 - `linear-update-issue` сначала читает задачу, затем обновляет метки, ответственного, родителя, заголовок или описание и проверяет результат.
 - `linear-update-issue --dry-run` проверяет целевое изменение без обновления Linear.
 - `linear-custom-view-setup --dry-run` проверяет команду, проект, метки и существующий Custom View без создания Custom View.
+- `linear-custom-view-update --dry-run` проверяет метаданные и фильтры Custom View без обновления Linear.
+- `linear-custom-view-update` не меняет ручной порядок задач.
+- `linear-relation-setup --dry-run` читает обе задачи и существующие связи без создания связи.
+- `linear-relation-setup` поддерживает `related`, `blocks` и `blocked-by`; `blocked-by` сохраняется как обратная связь `blocks`.
 - Все скрипты используют общий GraphQL-клиент, единое чтение API-ключа, TLS через `certifi` при наличии пакета и очистку ошибок от токенов.
 
 ## Разработка

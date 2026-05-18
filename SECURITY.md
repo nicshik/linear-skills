@@ -41,9 +41,11 @@ python3 linear-comment-issue/scripts/comment_issue.py
 python3 linear-create-issue/scripts/create_issue.py
 python3 linear-custom-view/scripts/custom_view.py
 python3 linear-custom-view-setup/scripts/custom_view_setup.py
+python3 linear-custom-view-update/scripts/custom_view_update.py
 python3 linear-label-setup/scripts/label_setup.py
 python3 linear-list-issues/scripts/list_issues.py
 python3 linear-read-issue/scripts/read_issue.py
+python3 linear-relation-setup/scripts/relation_setup.py
 python3 linear-update-issue/scripts/update_issue.py
 ```
 

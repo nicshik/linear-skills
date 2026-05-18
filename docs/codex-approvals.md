@@ -9,9 +9,11 @@ It is based on the setup used for:
 - `linear-create-issue`
 - `linear-custom-view`
 - `linear-custom-view-setup`
+- `linear-custom-view-update`
 - `linear-label-setup`
 - `linear-list-issues`
 - `linear-read-issue`
+- `linear-relation-setup`
 - `linear-update-issue`
 
 ## Why Prompts Appear
@@ -32,9 +34,11 @@ prefix_rule(pattern=["python3", "linear-comment-issue/scripts/comment_issue.py"]
 prefix_rule(pattern=["python3", "linear-create-issue/scripts/create_issue.py"], decision="allow")
 prefix_rule(pattern=["python3", "linear-custom-view/scripts/custom_view.py"], decision="allow")
 prefix_rule(pattern=["python3", "linear-custom-view-setup/scripts/custom_view_setup.py"], decision="allow")
+prefix_rule(pattern=["python3", "linear-custom-view-update/scripts/custom_view_update.py"], decision="allow")
 prefix_rule(pattern=["python3", "linear-label-setup/scripts/label_setup.py"], decision="allow")
 prefix_rule(pattern=["python3", "linear-list-issues/scripts/list_issues.py"], decision="allow")
 prefix_rule(pattern=["python3", "linear-read-issue/scripts/read_issue.py"], decision="allow")
+prefix_rule(pattern=["python3", "linear-relation-setup/scripts/relation_setup.py"], decision="allow")
 prefix_rule(pattern=["python3", "linear-update-issue/scripts/update_issue.py"], decision="allow")
 ```
 
@@ -46,9 +50,11 @@ python3 linear-comment-issue/scripts/comment_issue.py LIN-123 --body "Example co
 python3 linear-create-issue/scripts/create_issue.py --team LIN --title "Example issue" --dry-run
 python3 linear-custom-view/scripts/custom_view.py https://linear.app/example/view/example-123 --limit 10
 python3 linear-custom-view-setup/scripts/custom_view_setup.py --team LIN --name "Example view" --dry-run
+python3 linear-custom-view-update/scripts/custom_view_update.py "Example view" --team LIN --open-only --dry-run
 python3 linear-label-setup/scripts/label_setup.py --team LIN --label Example --dry-run
 python3 linear-list-issues/scripts/list_issues.py --team LIN --open-only --without-labels --limit 10
 python3 linear-read-issue/scripts/read_issue.py LIN-123 --include-comments
+python3 linear-relation-setup/scripts/relation_setup.py LIN-123 LIN-100 --type related --dry-run
 python3 linear-update-issue/scripts/update_issue.py LIN-123 --add-label Example --dry-run
 ```
 
@@ -75,9 +81,11 @@ The approval request should use one of these `prefix_rule` values:
 ["python3", "linear-create-issue/scripts/create_issue.py"]
 ["python3", "linear-custom-view/scripts/custom_view.py"]
 ["python3", "linear-custom-view-setup/scripts/custom_view_setup.py"]
+["python3", "linear-custom-view-update/scripts/custom_view_update.py"]
 ["python3", "linear-label-setup/scripts/label_setup.py"]
 ["python3", "linear-list-issues/scripts/list_issues.py"]
 ["python3", "linear-read-issue/scripts/read_issue.py"]
+["python3", "linear-relation-setup/scripts/relation_setup.py"]
 ["python3", "linear-update-issue/scripts/update_issue.py"]
 ```
 
@@ -101,9 +109,11 @@ prefix_rule(pattern=["python3", "linear-comment-issue/scripts/comment_issue.py"]
 prefix_rule(pattern=["python3", "linear-create-issue/scripts/create_issue.py"], decision="allow")
 prefix_rule(pattern=["python3", "linear-custom-view/scripts/custom_view.py"], decision="allow")
 prefix_rule(pattern=["python3", "linear-custom-view-setup/scripts/custom_view_setup.py"], decision="allow")
+prefix_rule(pattern=["python3", "linear-custom-view-update/scripts/custom_view_update.py"], decision="allow")
 prefix_rule(pattern=["python3", "linear-label-setup/scripts/label_setup.py"], decision="allow")
 prefix_rule(pattern=["python3", "linear-list-issues/scripts/list_issues.py"], decision="allow")
 prefix_rule(pattern=["python3", "linear-read-issue/scripts/read_issue.py"], decision="allow")
+prefix_rule(pattern=["python3", "linear-relation-setup/scripts/relation_setup.py"], decision="allow")
 prefix_rule(pattern=["python3", "linear-update-issue/scripts/update_issue.py"], decision="allow")
 ```
 
@@ -171,10 +181,12 @@ python3 linear-label-setup/scripts/label_setup.py --team LIN --label Example --e
 python3 linear-list-issues/scripts/list_issues.py --team LIN --open-only --without-labels --env-file /path/to/.env.local --limit 10
 python3 linear-update-issue/scripts/update_issue.py LIN-123 --add-label Example --env-file /path/to/.env.local --dry-run
 python3 linear-custom-view-setup/scripts/custom_view_setup.py --team LIN --name "Example view" --label Example --env-file /path/to/.env.local --dry-run
+python3 linear-custom-view-update/scripts/custom_view_update.py "Example view" --team LIN --label Example --env-file /path/to/.env.local --dry-run
 python3 linear-read-issue/scripts/read_issue.py LIN-123 --env-file /path/to/.env.local
+python3 linear-relation-setup/scripts/relation_setup.py LIN-123 LIN-100 --type related --env-file /path/to/.env.local --dry-run
 ```
 
-Use `--dry-run` for status changes, comments, issue creation, label setup, issue updates, and Custom View setup when testing. It reads the issue or resolves metadata without updating Linear. `linear-read-issue` and `linear-list-issues` are read-only by design.
+Use `--dry-run` for status changes, comments, issue creation, label setup, issue updates, Custom View setup, Custom View updates, and relation setup when testing. It reads the issue or resolves metadata without updating Linear. `linear-read-issue` and `linear-list-issues` are read-only by design.
 
 ## Troubleshooting
 

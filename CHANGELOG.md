@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add `linear-custom-view-update` for checked Custom View metadata and filter updates.
+- Add `linear-relation-setup` for checked issue relation setup covering `related`, `blocks`, and `blocked-by`.
 - Add `linear-list-issues` as a read-only issue listing fallback for migration, label cleanup, and metadata preflight.
 - Add `linear-label-setup` for explicit issue label setup with dry-run and no-op behavior.
 - Add `linear-update-issue` for checked issue updates covering labels, assignee, parent, title, and description.
