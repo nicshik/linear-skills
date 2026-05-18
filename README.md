@@ -17,9 +17,11 @@ The repository is intentionally generic. Project-specific queues, delivery rules
 | `linear-create-issue` | Create one Linear issue after resolving target team, status, project, and labels. |
 | `linear-custom-view` | Read a Linear Custom View and return its issues in manual order. |
 | `linear-custom-view-setup` | Ensure one team Custom View exists after resolving team, project, and labels. |
+| `linear-custom-view-update` | Update one existing Custom View after reading and resolving metadata. |
 | `linear-label-setup` | Ensure issue labels exist in a team, with dry-run and no-op behavior. |
 | `linear-list-issues` | Read filtered issue lists for migration, label cleanup, and metadata preflight. |
 | `linear-read-issue` | Read one Linear issue, with optional comments and relations, as a read-only fallback. |
+| `linear-relation-setup` | Ensure one related or blocking link exists between two Linear issues. |
 | `linear-update-issue` | Update one existing issue after a read-before-write check and verify the result. |
 
 ## Repository Layout
@@ -45,6 +47,10 @@ linear-custom-view-setup/
   SKILL.md
   agents/openai.yaml
   scripts/custom_view_setup.py
+linear-custom-view-update/
+  SKILL.md
+  agents/openai.yaml
+  scripts/custom_view_update.py
 linear-label-setup/
   SKILL.md
   agents/openai.yaml
@@ -57,6 +63,10 @@ linear-read-issue/
   SKILL.md
   agents/openai.yaml
   scripts/read_issue.py
+linear-relation-setup/
+  SKILL.md
+  agents/openai.yaml
+  scripts/relation_setup.py
 linear-update-issue/
   SKILL.md
   agents/openai.yaml
@@ -213,6 +223,28 @@ python3 linear-custom-view-setup/scripts/custom_view_setup.py \
   --dry-run
 ```
 
+Update one Custom View after reading it:
+
+```bash
+python3 linear-custom-view-update/scripts/custom_view_update.py \
+  "Example open work" \
+  --team LIN \
+  --label "Example label" \
+  --status Backlog \
+  --open-only \
+  --env-file /path/to/.env.local \
+  --dry-run
+```
+
+Ensure one issue relation exists:
+
+```bash
+python3 linear-relation-setup/scripts/relation_setup.py LIN-123 LIN-100 \
+  --type related \
+  --env-file /path/to/.env.local \
+  --dry-run
+```
+
 Test a status transition without updating Linear:
 
 ```bash
@@ -245,6 +277,8 @@ These skills are low-level Linear helpers:
 - `linear-list-issues` reads scoped issue lists for metadata preflight without updating Linear.
 - `linear-update-issue` updates one existing issue after read-before-write, then verifies the result.
 - `linear-custom-view-setup` creates one missing Custom View after resolving metadata.
+- `linear-custom-view-update` updates one existing Custom View after read-before-write, then verifies the result.
+- `linear-relation-setup` creates one missing issue relation after reading both issues, then verifies the result.
 
 They do not decide which project issue should be implemented, whether delivery is complete, or whether `Done` is appropriate. Keep those decisions in a project-specific wrapper skill or process document. The wrapper can call these scripts through stable environment variables such as `LINEAR_API_KEY`, `LINEAR_ENV_FILE`, or `--env-file`.
 
@@ -258,9 +292,11 @@ python3 linear-comment-issue/scripts/comment_issue.py
 python3 linear-create-issue/scripts/create_issue.py
 python3 linear-custom-view/scripts/custom_view.py
 python3 linear-custom-view-setup/scripts/custom_view_setup.py
+python3 linear-custom-view-update/scripts/custom_view_update.py
 python3 linear-label-setup/scripts/label_setup.py
 python3 linear-list-issues/scripts/list_issues.py
 python3 linear-read-issue/scripts/read_issue.py
+python3 linear-relation-setup/scripts/relation_setup.py
 python3 linear-update-issue/scripts/update_issue.py
 ```
 
@@ -288,6 +324,10 @@ For complete setup guidance, including how to pre-seed rules before the first ru
 - `linear-update-issue` reads the issue before updating labels, assignee, parent, title, or description, then verifies the result.
 - `linear-update-issue --dry-run` resolves the target update without updating Linear.
 - `linear-custom-view-setup --dry-run` resolves team, project, labels, and existing view state without creating a Custom View.
+- `linear-custom-view-update --dry-run` resolves Custom View metadata and filters without updating Linear.
+- `linear-custom-view-update` does not change manual issue ordering.
+- `linear-relation-setup --dry-run` reads both issues and existing relations without creating a relation.
+- `linear-relation-setup` supports `related`, `blocks`, and `blocked-by`; `blocked-by` is stored as a reversed `blocks` relation.
 - All scripts share one GraphQL client, API-key resolution, TLS setup through `certifi` when available, and token sanitization for error output.
 
 ## Development
@@ -303,9 +343,11 @@ python3 -m py_compile \
   linear-create-issue/scripts/create_issue.py \
   linear-custom-view/scripts/custom_view.py \
   linear-custom-view-setup/scripts/custom_view_setup.py \
+  linear-custom-view-update/scripts/custom_view_update.py \
   linear-label-setup/scripts/label_setup.py \
   linear-list-issues/scripts/list_issues.py \
   linear-read-issue/scripts/read_issue.py \
+  linear-relation-setup/scripts/relation_setup.py \
   linear-update-issue/scripts/update_issue.py \
   linear_common/graphql.py
 ```

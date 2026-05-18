@@ -1,0 +1,9 @@
+interface:
+  display_name: "Linear Relation Setup"
+  short_description: "Ensure a Linear issue relation"
+  brand_color: "#5E6AD2"
+  default_prompt: "Use $linear-relation-setup as a narrow fallback to ensure one Linear issue relation exists through the direct Linear API, read both issues first, prefer --dry-run, verify after mutation, and never print the API key."
+
+policy:
+  allow_implicit_invocation: false
+
