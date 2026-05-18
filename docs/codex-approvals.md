@@ -5,6 +5,7 @@ This guide explains how to make the Linear skills run without repeated Codex app
 It is based on the setup used for:
 
 - `linear-change-status`
+- `linear-create-issue`
 - `linear-custom-view`
 - `linear-read-issue`
 
@@ -22,6 +23,7 @@ Add these prefixes:
 
 ```text
 prefix_rule(pattern=["python3", "linear-change-status/scripts/change_status.py"], decision="allow")
+prefix_rule(pattern=["python3", "linear-create-issue/scripts/create_issue.py"], decision="allow")
 prefix_rule(pattern=["python3", "linear-custom-view/scripts/custom_view.py"], decision="allow")
 prefix_rule(pattern=["python3", "linear-read-issue/scripts/read_issue.py"], decision="allow")
 ```
@@ -30,6 +32,7 @@ These rules allow commands that start with the exact script path, for example:
 
 ```bash
 python3 linear-change-status/scripts/change_status.py LIN-123 Done --env-file /path/to/.env.local
+python3 linear-create-issue/scripts/create_issue.py --team LIN --title "Example issue" --dry-run
 python3 linear-custom-view/scripts/custom_view.py https://linear.app/example/view/example-123 --limit 10
 python3 linear-read-issue/scripts/read_issue.py LIN-123 --include-comments
 ```
@@ -53,6 +56,7 @@ The approval request should use one of these `prefix_rule` values:
 
 ```json
 ["python3", "linear-change-status/scripts/change_status.py"]
+["python3", "linear-create-issue/scripts/create_issue.py"]
 ["python3", "linear-custom-view/scripts/custom_view.py"]
 ["python3", "linear-read-issue/scripts/read_issue.py"]
 ```
@@ -73,6 +77,7 @@ Append:
 
 ```text
 prefix_rule(pattern=["python3", "linear-change-status/scripts/change_status.py"], decision="allow")
+prefix_rule(pattern=["python3", "linear-create-issue/scripts/create_issue.py"], decision="allow")
 prefix_rule(pattern=["python3", "linear-custom-view/scripts/custom_view.py"], decision="allow")
 prefix_rule(pattern=["python3", "linear-read-issue/scripts/read_issue.py"], decision="allow")
 ```
@@ -135,10 +140,11 @@ After adding the rules and restarting Codex, these commands should run without a
 ```bash
 python3 linear-custom-view/scripts/custom_view.py https://linear.app/example/view/example-123 --env-file /path/to/.env.local --limit 1
 python3 linear-change-status/scripts/change_status.py LIN-123 Done --env-file /path/to/.env.local --dry-run
+python3 linear-create-issue/scripts/create_issue.py --team LIN --status Backlog --title "Example issue" --env-file /path/to/.env.local --dry-run
 python3 linear-read-issue/scripts/read_issue.py LIN-123 --env-file /path/to/.env.local
 ```
 
-Use `--dry-run` for status changes when testing. It reads the issue and resolves the target status without updating Linear. `linear-read-issue` is read-only by design.
+Use `--dry-run` for status changes and issue creation when testing. It reads the issue or resolves metadata without updating Linear. `linear-read-issue` is read-only by design.
 
 ## Troubleshooting
 

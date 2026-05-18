@@ -36,9 +36,10 @@ echo "== Secret scan =="
 scripts/secret_scan.sh
 
 echo "== Compile Python sources =="
-python3 -m compileall linear-change-status linear-custom-view linear-read-issue linear_common tests
+python3 -m compileall linear-change-status linear-create-issue linear-custom-view linear-read-issue linear_common tests
 python3 -m py_compile \
   linear-change-status/scripts/change_status.py \
+  linear-create-issue/scripts/create_issue.py \
   linear-custom-view/scripts/custom_view.py \
   linear-read-issue/scripts/read_issue.py \
   linear_common/graphql.py
@@ -52,6 +53,7 @@ python3 scripts/validate_skill_files.py
 echo "== CLI help smoke =="
 python3 linear-custom-view/scripts/custom_view.py --help >/dev/null
 python3 linear-change-status/scripts/change_status.py --help >/dev/null
+python3 linear-create-issue/scripts/create_issue.py --help >/dev/null
 python3 linear-read-issue/scripts/read_issue.py --help >/dev/null
 
 echo "Validation passed."
