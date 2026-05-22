@@ -22,6 +22,7 @@ class FakeClient:
         self.queries: list[str] = []
         self.variables: list[dict] = []
         self.updated_description = "Initial body"
+        self.updated_priority = 0
 
     def gql(self, query, variables=None):
         self.queries.append(query)
@@ -30,7 +31,7 @@ class FakeClient:
             lookup = (variables or {}).get("id")
             if lookup in {"LIN-9", "parent-id"}:
                 return {"issue": self.issue("parent-id", "LIN-9", "Parent", "Parent body")}
-            return {"issue": self.issue("issue-id", "LIN-123", "Fixture issue", self.updated_description)}
+            return {"issue": self.issue("issue-id", "LIN-123", "Fixture issue", self.updated_description, self.updated_priority)}
         if "query Labels" in query:
             return {
                 "issueLabels": {
@@ -55,22 +56,30 @@ class FakeClient:
             }
         if "mutation UpdateIssue" in query:
             self.updated_description = variables["input"].get("description", self.updated_description)
+            self.updated_priority = variables["input"].get("priority", self.updated_priority)
             return {
                 "issueUpdate": {
                     "success": True,
-                    "issue": self.issue("issue-id", "LIN-123", variables["input"].get("title", "Fixture issue"), self.updated_description),
+                    "issue": self.issue(
+                        "issue-id",
+                        "LIN-123",
+                        variables["input"].get("title", "Fixture issue"),
+                        self.updated_description,
+                        self.updated_priority,
+                    ),
                 }
             }
         raise AssertionError(query)
 
     @staticmethod
-    def issue(issue_id: str, identifier: str, title: str, description: str):
+    def issue(issue_id: str, identifier: str, title: str, description: str, priority: int = 0):
         return {
             "id": issue_id,
             "identifier": identifier,
             "title": title,
             "description": description,
             "url": f"https://linear.app/example/issue/{identifier}/fixture",
+            "priority": priority,
             "state": {"id": "todo", "name": "Todo", "type": "unstarted"},
             "team": {"id": "team-id", "key": "LIN", "name": "Example"},
             "project": {"id": "project-id", "name": "Example Project"},
@@ -90,6 +99,7 @@ class UpdateIssueTest(unittest.TestCase):
             "parent": None,
             "title": None,
             "sort_order": None,
+            "priority": None,
             "description_file": None,
             "append_description_file": None,
             "dry_run": False,
@@ -135,6 +145,64 @@ class UpdateIssueTest(unittest.TestCase):
         )
         self.assertEqual(update_variables["input"], {"sortOrder": -199000.0})
         self.assertEqual(result["target"]["sort_order"], -199000.0)
+
+    def test_dry_run_priority_update_uses_only_priority_field(self) -> None:
+        client = FakeClient()
+
+        result = update_issue.update_issue(
+            client,
+            self.args(priority="high", dry_run=True),
+        )
+
+        self.assertEqual(result["action"], "dry_run")
+        self.assertEqual(result["input"], {"priority": 2})
+        self.assertEqual(result["target"]["priority"], 2)
+        self.assertNotIn("mutation", "\n".join(client.queries).casefold())
+
+    def test_priority_update_uses_only_priority_field_and_verifies(self) -> None:
+        client = FakeClient()
+
+        result = update_issue.update_issue(
+            client,
+            self.args(priority="urgent"),
+        )
+
+        self.assertEqual(result["action"], "updated")
+        update_variables = next(
+            variables for query, variables in zip(client.queries, client.variables)
+            if "mutation UpdateIssue" in query
+        )
+        self.assertEqual(update_variables["input"], {"priority": 1})
+        self.assertEqual(result["verified"]["priority"], 1)
+
+    def test_priority_parser_accepts_aliases_and_numbers(self) -> None:
+        cases = {
+            "none": 0,
+            "no-priority": 0,
+            "no_priority": 0,
+            "0": 0,
+            "urgent": 1,
+            "1": 1,
+            "high": 2,
+            "2": 2,
+            "medium": 3,
+            "normal": 3,
+            "3": 3,
+            "low": 4,
+            "4": 4,
+        }
+
+        for raw, expected in cases.items():
+            with self.subTest(raw=raw):
+                self.assertEqual(update_issue.parse_priority(raw), expected)
+
+    def test_invalid_priority_is_controlled_error(self) -> None:
+        client = FakeClient()
+
+        with self.assertRaises(update_issue.LinearApiError) as error:
+            update_issue.update_issue(client, self.args(priority="critical", dry_run=True))
+
+        self.assertEqual(error.exception.category, "validation")
 
     def test_update_appends_description_and_verifies(self) -> None:
         client = FakeClient()

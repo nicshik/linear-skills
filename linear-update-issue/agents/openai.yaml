@@ -2,8 +2,7 @@ interface:
   display_name: "Linear Update Issue"
   short_description: "Update one Linear issue via API"
   brand_color: "#5E6AD2"
-  default_prompt: "Use $linear-update-issue as a narrow fallback to update one existing Linear issue through the direct Linear API, read before writing, prefer --dry-run first, verify after mutation, and never print the API key."
+  default_prompt: "Use $linear-update-issue as a narrow fallback to update one existing Linear issue through the direct Linear API, including labels, assignee, parent, text, priority, or manual sort order; read before writing, prefer --dry-run first, verify after mutation, and never print the API key."
 
 policy:
   allow_implicit_invocation: false
-

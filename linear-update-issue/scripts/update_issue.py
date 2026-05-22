@@ -26,6 +26,7 @@ ISSUE_FIELDS = """
   title
   description
   url
+  priority
   state { id name type }
   team { id key name }
   project { id name }
@@ -45,6 +46,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--assignee", help="Assignee user ID, exact name, display name, or email.")
     parser.add_argument("--parent", help="Parent issue key, ID, or URL.")
     parser.add_argument("--title", help="Replacement issue title.")
+    parser.add_argument("--priority", help="Replacement issue priority: none, urgent, high, medium/normal, low, or 0..4.")
     parser.add_argument("--sort-order", type=float, help="Replacement manual issue sort order.")
     parser.add_argument("--description-file", help="Path to a UTF-8 Markdown replacement description.")
     parser.add_argument("--append-description-file", help="Path to UTF-8 Markdown to append to the current description.")
@@ -58,6 +60,33 @@ def parse_args() -> argparse.Namespace:
 
 def normalize(value: str) -> str:
     return value.casefold().strip()
+
+
+PRIORITY_VALUES = {
+    "none": 0,
+    "no-priority": 0,
+    "no_priority": 0,
+    "0": 0,
+    "urgent": 1,
+    "1": 1,
+    "high": 2,
+    "2": 2,
+    "medium": 3,
+    "normal": 3,
+    "3": 3,
+    "low": 4,
+    "4": 4,
+}
+
+
+def parse_priority(value: str | None) -> int | None:
+    if value is None:
+        return None
+    priority = PRIORITY_VALUES.get(normalize(value))
+    if priority is None:
+        allowed = "none/no-priority/no_priority/0, urgent/1, high/2, medium/normal/3, low/4"
+        raise LinearApiError("validation", f"Priority must be one of: {allowed}.")
+    return priority
 
 
 def issue_lookup_key(value: str) -> str:
@@ -181,6 +210,7 @@ def build_update_input(client: LinearClient, issue: dict[str, Any], args: argpar
     remove_labels = resolve_labels(client, team_id, args.remove_label)
     assignee = resolve_user(client, args.assignee)
     parent = resolve_parent(client, args.parent)
+    priority = parse_priority(args.priority)
     description = build_description(issue.get("description"), args)
 
     input_data: dict[str, Any] = {}
@@ -194,6 +224,8 @@ def build_update_input(client: LinearClient, issue: dict[str, Any], args: argpar
         input_data["parentId"] = parent["id"]
     if args.title:
         input_data["title"] = args.title
+    if priority is not None:
+        input_data["priority"] = priority
     if args.sort_order is not None:
         input_data["sortOrder"] = args.sort_order
     if description is not None:
@@ -206,6 +238,7 @@ def build_update_input(client: LinearClient, issue: dict[str, Any], args: argpar
         "assignee": assignee,
         "parent": parent,
         "title": args.title,
+        "priority": priority,
         "sort_order": args.sort_order,
         "description_changed": description is not None,
     }
@@ -263,6 +296,8 @@ def emit_text_result(result: dict[str, Any]) -> None:
         print(f"assignee={result['target']['assignee'].get('name')}")
     if result["target"].get("parent"):
         print(f"parent={result['target']['parent'].get('identifier')}")
+    if result["target"].get("priority") is not None:
+        print(f"priority={result['target']['priority']}")
     if result["target"].get("sort_order") is not None:
         print(f"sort_order={result['target']['sort_order']}")
 
