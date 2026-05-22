@@ -35,6 +35,7 @@ Prefer the official Linear connector for normal issue reads. This skill is not a
 - Never print the API key.
 - Do not store the API key in the skill directory.
 - Keep this helper read-only. It must not send GraphQL mutations.
+- Prefer a stable issue key such as `LIN-123` when available. A UUID or URL without an issue key may refer to another Linear entity.
 - Use `--include-comments` only when comments are required.
 - Use `--include-relations` only when blocker or related-issue context is required.
 - Do not use this skill to decide queue priority; use `linear-custom-view` for Custom View order.
@@ -61,3 +62,5 @@ python3 scripts/read_issue.py LIN-123 --json --include-comments --include-relati
 - Text output: issue identifier, status, team, project, labels, and optional comment/relation counts.
 - `--json` output: `schema_version`, `fetched_at`, lookup input, and issue payload.
 - Failure categories are `missing_api_key`, `not_found`, `permission_denied`, and `network`.
+- Issue lookup failures use `error_category=not_found` and `error_code=issue_not_found`, with safe `lookup`, `input_kind`, and `hint` fields.
+- `issue_not_found` means Linear was reached but the target Issue was not found by the provided reference. Do not report it as a missing API key unless the error category is `missing_api_key`.

@@ -189,6 +189,12 @@ python3 linear-comment-issue/scripts/comment_issue.py LIN-123 \
   --env-file /path/to/.env.local
 ```
 
+### Диагностика целевой задачи
+
+Для чтения и комментариев по возможности используйте стабильные ключи задач, например `LIN-123`. Если `linear-read-issue` или `linear-comment-issue` дошёл до Linear, но не нашёл целевую Issue, JSON-вывод содержит `error_category=not_found`, `error_code=issue_not_found`, `lookup`, `input_kind` и безопасную подсказку `hint`.
+
+`issue_not_found` означает неверную, недоступную или относящуюся к другой рабочей области цель. Не описывайте это как отсутствие `LINEAR_API_KEY`, если helper явно не вернул `error_category=missing_api_key`.
+
 Проверить и при необходимости создать метку в команде:
 
 ```bash

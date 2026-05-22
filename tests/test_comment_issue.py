@@ -16,14 +16,20 @@ SPEC.loader.exec_module(comment_issue)
 
 
 class FakeClient:
-    def __init__(self) -> None:
+    def __init__(self, issue_exists: bool = True, entity_error: bool = False) -> None:
         self.queries: list[str] = []
         self.variables: list[dict] = []
+        self.issue_exists = issue_exists
+        self.entity_error = entity_error
 
     def gql(self, query, variables=None):
         self.queries.append(query)
         self.variables.append(variables or {})
         if "query Issue" in query:
+            if self.entity_error:
+                raise comment_issue.LinearApiError("network", "Entity not found: Issue")
+            if not self.issue_exists:
+                return {"issue": None}
             return {"issue": self.issue("LIN-123")}
         if "mutation CreateComment" in query:
             return {
@@ -88,7 +94,38 @@ class CommentIssueTest(unittest.TestCase):
         self.assertEqual(create_variables["input"]["issueId"], "issue-id")
         self.assertEqual(create_variables["input"]["body"], "Body")
 
+    def test_not_found_error_does_not_create_comment_mutation(self) -> None:
+        client = FakeClient(issue_exists=False)
+
+        with self.assertRaises(comment_issue.LinearApiError) as error:
+            comment_issue.comment_issue(
+                client,
+                "123e4567-e89b-12d3-a456-426614174000",
+                "Body",
+                dry_run=False,
+            )
+
+        self.assertEqual(error.exception.category, "not_found")
+        self.assertEqual(error.exception.details["error_code"], "issue_not_found")
+        self.assertEqual(error.exception.details["input_kind"], "uuid_or_raw")
+        self.assertNotIn("mutation CreateComment", "\n".join(client.queries))
+
+    def test_graphql_entity_not_found_error_is_issue_not_found(self) -> None:
+        client = FakeClient(entity_error=True)
+
+        with self.assertRaises(comment_issue.LinearApiError) as error:
+            comment_issue.comment_issue(
+                client,
+                "https://linear.app/example/comment/123e4567-e89b-12d3-a456-426614174000",
+                "Body",
+                dry_run=False,
+            )
+
+        self.assertEqual(error.exception.category, "not_found")
+        self.assertEqual(error.exception.details["error_code"], "issue_not_found")
+        self.assertEqual(error.exception.details["input_kind"], "url_without_identifier")
+        self.assertNotIn("mutation CreateComment", "\n".join(client.queries))
+
 
 if __name__ == "__main__":
     unittest.main()
-

@@ -2,8 +2,7 @@ interface:
   display_name: "Linear Read Issue"
   short_description: "Read Linear issue details via API"
   brand_color: "#5E6AD2"
-  default_prompt: "Use $linear-read-issue as a read-only fallback to read a Linear issue through the direct Linear API when the normal connector cannot return required comments or relations, and never print the API key."
+  default_prompt: "Use $linear-read-issue as a read-only fallback to read a Linear issue through the direct Linear API when the normal connector cannot return required comments or relations, prefer stable issue keys, treat issue_not_found as a target issue problem rather than a missing API key, and never print the API key."
 
 policy:
   allow_implicit_invocation: false
-

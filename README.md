@@ -188,6 +188,12 @@ python3 linear-comment-issue/scripts/comment_issue.py LIN-123 \
   --env-file /path/to/.env.local
 ```
 
+### Issue target diagnostics
+
+Use stable issue keys such as `LIN-123` for read and comment targets whenever possible. If `linear-read-issue` or `linear-comment-issue` reaches Linear but cannot find the target Issue, JSON output includes `error_category=not_found`, `error_code=issue_not_found`, `lookup`, `input_kind`, and a safe `hint`.
+
+Treat `issue_not_found` as a wrong, inaccessible, or cross-workspace issue target. Do not report it as a missing `LINEAR_API_KEY` unless the helper actually returns `error_category=missing_api_key`.
+
 Ensure issue labels exist in a team:
 
 ```bash
