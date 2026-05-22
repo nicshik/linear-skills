@@ -211,10 +211,23 @@ Update an existing issue after reading it:
 python3 linear-update-issue/scripts/update_issue.py LIN-123 \
   --add-label "Example label" \
   --assignee "Example User" \
+  --priority high \
   --append-description-file /path/to/addition.md \
   --env-file /path/to/.env.local \
   --dry-run
 ```
+
+Set one issue's priority after reading it:
+
+```bash
+python3 linear-update-issue/scripts/update_issue.py LIN-123 \
+  --priority high \
+  --env-file /path/to/.env.local \
+  --dry-run \
+  --json
+```
+
+Accepted priority values are `none`, `no-priority`, `no_priority`, `urgent`, `high`, `medium`, `normal`, `low`, and numeric `0..4`.
 
 Set one issue's manual order after reading it:
 
@@ -293,7 +306,7 @@ These skills are low-level Linear helpers:
 - `linear-create-issue` creates one issue after resolving required metadata and verifying the created issue.
 - `linear-label-setup` creates missing labels only when explicitly asked, with no-op behavior for existing labels.
 - `linear-list-issues` reads scoped issue lists for metadata preflight without updating Linear.
-- `linear-update-issue` updates one existing issue after read-before-write, including optional manual `sortOrder`, then verifies the result.
+- `linear-update-issue` updates one existing issue after read-before-write, including optional priority or manual `sortOrder`, then verifies the result.
 - `linear-custom-view-setup` creates one missing Custom View after resolving metadata.
 - `linear-custom-view-update` updates one existing Custom View after read-before-write, then verifies the result.
 - `linear-relation-setup` creates one missing issue relation after reading both issues, then verifies the result.

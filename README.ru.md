@@ -212,10 +212,23 @@ python3 linear-label-setup/scripts/label_setup.py \
 python3 linear-update-issue/scripts/update_issue.py LIN-123 \
   --add-label "Example label" \
   --assignee "Example User" \
+  --priority high \
   --append-description-file /path/to/addition.md \
   --env-file /path/to/.env.local \
   --dry-run
 ```
+
+Задать приоритет одной задачи после чтения:
+
+```bash
+python3 linear-update-issue/scripts/update_issue.py LIN-123 \
+  --priority high \
+  --env-file /path/to/.env.local \
+  --dry-run \
+  --json
+```
+
+Допустимые значения priority: `none`, `no-priority`, `no_priority`, `urgent`, `high`, `medium`, `normal`, `low` и числа `0..4`.
 
 Задать ручное место одной задачи после чтения:
 
@@ -294,7 +307,7 @@ python3 linear-change-status/scripts/change_status.py \
 - `linear-create-issue` создаёт одну задачу после проверки нужных метаданных и затем проверяет созданную задачу.
 - `linear-label-setup` создаёт отсутствующие метки только по явному запросу и ничего не делает с уже существующими метками.
 - `linear-list-issues` читает списки задач для проверки метаданных без изменений Linear.
-- `linear-update-issue` обновляет одну существующую задачу после чтения, включая ручной `sortOrder`, и затем проверяет результат.
+- `linear-update-issue` обновляет одну существующую задачу после чтения, включая priority или ручной `sortOrder`, и затем проверяет результат.
 - `linear-custom-view-setup` создаёт один отсутствующий Custom View после проверки метаданных.
 - `linear-custom-view-update` обновляет один существующий Custom View после чтения и затем проверяет результат.
 - `linear-relation-setup` создаёт одну отсутствующую связь между задачами после чтения обеих задач и затем проверяет результат.
