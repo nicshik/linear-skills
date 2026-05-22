@@ -6,9 +6,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
-import re
 import sys
-import urllib.parse
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +16,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from linear_common.graphql import API_URL, LinearApiError, LinearClient, resolve_api_key
+from linear_common.issue_refs import is_issue_entity_not_found_message, issue_not_found_details, parse_issue_reference
 
 
 def parse_args() -> argparse.Namespace:
@@ -36,16 +35,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def issue_lookup_key(value: str) -> str:
-    parsed = urllib.parse.urlparse(value)
-    text = urllib.parse.unquote(parsed.path if parsed.scheme and parsed.netloc else value)
-    identifier_match = re.search(r"\b[A-Z][A-Z0-9]+-\d+\b", text, flags=re.IGNORECASE)
-    if identifier_match:
-        return identifier_match.group(0).upper()
-    if parsed.scheme and parsed.netloc:
-        path_parts = [part for part in text.split("/") if part]
-        if path_parts:
-            return path_parts[-1]
-    return value.strip()
+    return parse_issue_reference(value).lookup
 
 
 def read_body(args: argparse.Namespace) -> str:
@@ -101,20 +91,33 @@ def compact_issue(issue: dict[str, Any]) -> dict[str, Any]:
 
 
 def read_issue(client: LinearClient, issue_ref: str) -> dict[str, Any]:
-    lookup = issue_lookup_key(issue_ref)
-    data = client.gql(
-        f"""
-        query Issue($id: String!) {{
-          issue(id: $id) {{
-            {ISSUE_FIELDS}
-          }}
-        }}
-        """,
-        {"id": lookup},
-    )
+    reference = parse_issue_reference(issue_ref)
+    try:
+        data = client.gql(
+            f"""
+            query Issue($id: String!) {{
+              issue(id: $id) {{
+                {ISSUE_FIELDS}
+              }}
+            }}
+            """,
+            {"id": reference.lookup},
+        )
+    except LinearApiError as exc:
+        if is_issue_entity_not_found_message(exc.message):
+            raise LinearApiError(
+                "not_found",
+                f"Issue '{reference.lookup}' was not found.",
+                issue_not_found_details(reference),
+            ) from exc
+        raise
     issue = data.get("issue")
     if not issue:
-        raise LinearApiError("not_found", f"Issue '{lookup}' was not found.")
+        raise LinearApiError(
+            "not_found",
+            f"Issue '{reference.lookup}' was not found.",
+            issue_not_found_details(reference),
+        )
     return compact_issue(issue)
 
 
@@ -177,18 +180,13 @@ def main() -> int:
         result = build_result(client, args)
     except LinearApiError as exc:
         if args.json:
-            print(
-                json.dumps(
-                    {
-                        "schema_version": "linear-comment-issue.error.v1",
-                        "error_category": exc.category,
-                        "error": exc.message,
-                    },
-                    ensure_ascii=False,
-                    indent=2,
-                ),
-                file=sys.stderr,
-            )
+            payload = {
+                "schema_version": "linear-comment-issue.error.v1",
+                "error_category": exc.category,
+                "error": exc.message,
+            }
+            payload.update(exc.details)
+            print(json.dumps(payload, ensure_ascii=False, indent=2), file=sys.stderr)
         else:
             print(f"error_category={exc.category}", file=sys.stderr)
             print(exc.message, file=sys.stderr)
@@ -203,4 +201,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

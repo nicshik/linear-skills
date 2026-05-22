@@ -16,10 +16,11 @@ ENV_KEY = "LINEAR_API_KEY"
 
 
 class LinearApiError(Exception):
-    def __init__(self, category: str, message: str) -> None:
+    def __init__(self, category: str, message: str, details: dict[str, Any] | None = None) -> None:
         super().__init__(message)
         self.category = category
         self.message = message
+        self.details = details or {}
 
 
 def parse_env_file(path: Path) -> dict[str, str]:
@@ -131,4 +132,3 @@ class LinearClient:
             errors = sanitize_text(json.dumps(payload["errors"], ensure_ascii=False, indent=2), self.token)
             raise LinearApiError("network", errors)
         return payload["data"]
-

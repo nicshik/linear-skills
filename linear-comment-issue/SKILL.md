@@ -36,8 +36,10 @@ Prefer the official Linear connector for normal comments. This skill is a fallba
 - Do not store the API key in the skill directory.
 - Create exactly one comment per invocation.
 - Read and verify the target issue before sending the mutation.
+- Prefer a stable issue key such as `LIN-123` when available. A URL or UUID that points to a comment, project, relation, or another workspace is not a valid comment target.
 - Use `--dry-run` first when a caller needs to verify the issue without creating a comment.
 - Read the issue again after commenting and report the verified result.
+- If the helper returns `error_code=issue_not_found`, do not retry as a missing API key problem. Verify the target with `linear-read-issue` and the stable issue key.
 
 ## Codex Permission Rule
 
@@ -60,4 +62,4 @@ python3 scripts/comment_issue.py LIN-123 --body "Short comment" --env-file /path
 - Text output: target issue, then `commented` or `dry_run`.
 - `--json` output: structured fields for target issue, comment, verified issue, action, and `error_category`.
 - Failure categories are `missing_api_key`, `not_found`, `validation`, `permission_denied`, and `network`.
-
+- Issue lookup failures use `error_category=not_found` and `error_code=issue_not_found`, with safe `lookup`, `input_kind`, and `hint` fields. No comment mutation is sent in this case.
