@@ -36,11 +36,12 @@ echo "== Secret scan =="
 scripts/secret_scan.sh
 
 echo "== Compile Python sources =="
-python3 -m compileall linear-change-status linear-comment-issue linear-create-issue linear-custom-view linear-custom-view-setup linear-custom-view-update linear-label-setup linear-list-issues linear-read-issue linear-relation-setup linear-update-issue linear_common tests
+python3 -m compileall linear-change-status linear-comment-issue linear-create-issue linear-delete-issue linear-custom-view linear-custom-view-setup linear-custom-view-update linear-label-setup linear-list-issues linear-read-issue linear-relation-setup linear-update-issue linear_common tests
 python3 -m py_compile \
   linear-change-status/scripts/change_status.py \
   linear-comment-issue/scripts/comment_issue.py \
   linear-create-issue/scripts/create_issue.py \
+  linear-delete-issue/scripts/delete_issue.py \
   linear-custom-view/scripts/custom_view.py \
   linear-custom-view-setup/scripts/custom_view_setup.py \
   linear-custom-view-update/scripts/custom_view_update.py \
@@ -63,6 +64,7 @@ python3 linear-custom-view-update/scripts/custom_view_update.py --help >/dev/nul
 python3 linear-change-status/scripts/change_status.py --help >/dev/null
 python3 linear-comment-issue/scripts/comment_issue.py --help >/dev/null
 python3 linear-create-issue/scripts/create_issue.py --help >/dev/null
+python3 linear-delete-issue/scripts/delete_issue.py --help >/dev/null
 python3 linear-read-issue/scripts/read_issue.py --help >/dev/null
 python3 linear-label-setup/scripts/label_setup.py --help >/dev/null
 python3 linear-list-issues/scripts/list_issues.py --help >/dev/null

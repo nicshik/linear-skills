@@ -1,0 +1,8 @@
+interface:
+  display_name: "Linear Delete Issue"
+  short_description: "Soft-delete one Linear issue via API"
+  brand_color: "#5E6AD2"
+  default_prompt: "Use $linear-delete-issue as a narrow fallback to soft-delete one Linear issue through the direct Linear API when the normal connector cannot delete it, read and verify the issue first, require --dry-run before live deletion unless an equivalent checked dry-run already exists, require exact --confirm for live deletion, use guard options for caller-specific safety rules, never permanently delete issues, and never print the API key."
+
+policy:
+  allow_implicit_invocation: false

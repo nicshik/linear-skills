@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add `linear-delete-issue` for checked soft deletion of one issue with read-before-delete, dry-run, exact confirmation, and guard checks.
 - Allow `linear-update-issue` to set issue `priority` with checked aliases, dry-run support, and verified read-back.
 - Add structured `issue_not_found` diagnostics for read/comment helpers so wrong issue targets are not confused with API key or connector failures.
 - Allow `linear-update-issue` to set `sortOrder` for checked manual issue ordering.
