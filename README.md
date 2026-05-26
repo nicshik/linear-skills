@@ -15,6 +15,7 @@ The repository is intentionally generic. Project-specific queues, delivery rules
 | `linear-change-status` | Change a Linear issue workflow state and verify the result. |
 | `linear-comment-issue` | Add one comment to a Linear issue after reading and verifying the target issue. |
 | `linear-create-issue` | Create one Linear issue after resolving target team, status, project, and labels. |
+| `linear-delete-issue` | Soft-delete one Linear issue after reading it and passing explicit guard checks. |
 | `linear-custom-view` | Read a Linear Custom View and return its issues in manual order. |
 | `linear-custom-view-setup` | Ensure one team Custom View exists after resolving team, project, and labels. |
 | `linear-custom-view-update` | Update one existing Custom View after reading and resolving metadata. |
@@ -39,6 +40,10 @@ linear-create-issue/
   SKILL.md
   agents/openai.yaml
   scripts/create_issue.py
+linear-delete-issue/
+  SKILL.md
+  agents/openai.yaml
+  scripts/delete_issue.py
 linear-custom-view/
   SKILL.md
   agents/openai.yaml
@@ -188,9 +193,25 @@ python3 linear-comment-issue/scripts/comment_issue.py LIN-123 \
   --env-file /path/to/.env.local
 ```
 
+Soft-delete one issue after verifying guards:
+
+```bash
+python3 linear-delete-issue/scripts/delete_issue.py LIN-123 \
+  --expect-status Done \
+  --forbid-label Idea \
+  --require-no-children \
+  --require-no-relations \
+  --require-no-comments \
+  --env-file /path/to/.env.local \
+  --dry-run \
+  --json
+```
+
+For live deletion, repeat the checked command without `--dry-run` and add `--confirm LIN-123`. This helper does not expose permanent deletion.
+
 ### Issue target diagnostics
 
-Use stable issue keys such as `LIN-123` for read and comment targets whenever possible. If `linear-read-issue` or `linear-comment-issue` reaches Linear but cannot find the target Issue, JSON output includes `error_category=not_found`, `error_code=issue_not_found`, `lookup`, `input_kind`, and a safe `hint`.
+Use stable issue keys such as `LIN-123` for read, comment, and delete targets whenever possible. If `linear-read-issue`, `linear-comment-issue`, or `linear-delete-issue` reaches Linear but cannot find the target Issue, JSON output includes `error_category=not_found`, `error_code=issue_not_found`, `lookup`, `input_kind`, and a safe `hint`.
 
 Treat `issue_not_found` as a wrong, inaccessible, or cross-workspace issue target. Do not report it as a missing `LINEAR_API_KEY` unless the helper actually returns `error_category=missing_api_key`.
 
@@ -304,6 +325,7 @@ These skills are low-level Linear helpers:
 - `linear-comment-issue` creates one issue comment after reading and verifying the target issue.
 - `linear-read-issue` reads one issue and optional comments or relations without updating Linear.
 - `linear-create-issue` creates one issue after resolving required metadata and verifying the created issue.
+- `linear-delete-issue` soft-deletes one issue after reading it, checking optional guards, and requiring exact confirmation for live deletion.
 - `linear-label-setup` creates missing labels only when explicitly asked, with no-op behavior for existing labels.
 - `linear-list-issues` reads scoped issue lists for metadata preflight without updating Linear.
 - `linear-update-issue` updates one existing issue after read-before-write, including optional priority or manual `sortOrder`, then verifies the result.
@@ -321,6 +343,7 @@ The scripts call the Linear API, so Codex may ask for network approval. To avoid
 python3 linear-change-status/scripts/change_status.py
 python3 linear-comment-issue/scripts/comment_issue.py
 python3 linear-create-issue/scripts/create_issue.py
+python3 linear-delete-issue/scripts/delete_issue.py
 python3 linear-custom-view/scripts/custom_view.py
 python3 linear-custom-view-setup/scripts/custom_view_setup.py
 python3 linear-custom-view-update/scripts/custom_view_update.py
@@ -347,6 +370,8 @@ For complete setup guidance, including how to pre-seed rules before the first ru
 - `linear-list-issues` sends only read queries and never GraphQL mutations.
 - `linear-create-issue --dry-run` resolves team, status, project, and labels without creating an issue.
 - `linear-comment-issue --dry-run` resolves the target issue without creating a comment.
+- `linear-delete-issue --dry-run` reads the target issue and guard checks without deleting it.
+- `linear-delete-issue` soft-deletes exactly one issue, requires exact `--confirm`, and does not expose permanent deletion.
 - `linear-create-issue --optional-label` skips missing optional labels while preserving required-label failures.
 - `linear-create-issue` can assign a user and parent issue after resolving both IDs; it does not create missing labels.
 - `linear-label-setup --dry-run` resolves team and labels without creating labels.
@@ -373,6 +398,7 @@ python3 -m py_compile \
   linear-change-status/scripts/change_status.py \
   linear-comment-issue/scripts/comment_issue.py \
   linear-create-issue/scripts/create_issue.py \
+  linear-delete-issue/scripts/delete_issue.py \
   linear-custom-view/scripts/custom_view.py \
   linear-custom-view-setup/scripts/custom_view_setup.py \
   linear-custom-view-update/scripts/custom_view_update.py \

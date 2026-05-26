@@ -7,6 +7,7 @@ It is based on the setup used for:
 - `linear-change-status`
 - `linear-comment-issue`
 - `linear-create-issue`
+- `linear-delete-issue`
 - `linear-custom-view`
 - `linear-custom-view-setup`
 - `linear-custom-view-update`
@@ -32,6 +33,7 @@ Add these prefixes:
 prefix_rule(pattern=["python3", "linear-change-status/scripts/change_status.py"], decision="allow")
 prefix_rule(pattern=["python3", "linear-comment-issue/scripts/comment_issue.py"], decision="allow")
 prefix_rule(pattern=["python3", "linear-create-issue/scripts/create_issue.py"], decision="allow")
+prefix_rule(pattern=["python3", "linear-delete-issue/scripts/delete_issue.py"], decision="allow")
 prefix_rule(pattern=["python3", "linear-custom-view/scripts/custom_view.py"], decision="allow")
 prefix_rule(pattern=["python3", "linear-custom-view-setup/scripts/custom_view_setup.py"], decision="allow")
 prefix_rule(pattern=["python3", "linear-custom-view-update/scripts/custom_view_update.py"], decision="allow")
@@ -48,6 +50,7 @@ These rules allow commands that start with the exact script path, for example:
 python3 linear-change-status/scripts/change_status.py LIN-123 Done --env-file /path/to/.env.local
 python3 linear-comment-issue/scripts/comment_issue.py LIN-123 --body "Example comment" --dry-run
 python3 linear-create-issue/scripts/create_issue.py --team LIN --title "Example issue" --dry-run
+python3 linear-delete-issue/scripts/delete_issue.py LIN-123 --dry-run --json
 python3 linear-custom-view/scripts/custom_view.py https://linear.app/example/view/example-123 --limit 10
 python3 linear-custom-view-setup/scripts/custom_view_setup.py --team LIN --name "Example view" --dry-run
 python3 linear-custom-view-update/scripts/custom_view_update.py "Example view" --team LIN --open-only --dry-run
@@ -79,6 +82,7 @@ The approval request should use one of these `prefix_rule` values:
 ["python3", "linear-change-status/scripts/change_status.py"]
 ["python3", "linear-comment-issue/scripts/comment_issue.py"]
 ["python3", "linear-create-issue/scripts/create_issue.py"]
+["python3", "linear-delete-issue/scripts/delete_issue.py"]
 ["python3", "linear-custom-view/scripts/custom_view.py"]
 ["python3", "linear-custom-view-setup/scripts/custom_view_setup.py"]
 ["python3", "linear-custom-view-update/scripts/custom_view_update.py"]
@@ -107,6 +111,7 @@ Append:
 prefix_rule(pattern=["python3", "linear-change-status/scripts/change_status.py"], decision="allow")
 prefix_rule(pattern=["python3", "linear-comment-issue/scripts/comment_issue.py"], decision="allow")
 prefix_rule(pattern=["python3", "linear-create-issue/scripts/create_issue.py"], decision="allow")
+prefix_rule(pattern=["python3", "linear-delete-issue/scripts/delete_issue.py"], decision="allow")
 prefix_rule(pattern=["python3", "linear-custom-view/scripts/custom_view.py"], decision="allow")
 prefix_rule(pattern=["python3", "linear-custom-view-setup/scripts/custom_view_setup.py"], decision="allow")
 prefix_rule(pattern=["python3", "linear-custom-view-update/scripts/custom_view_update.py"], decision="allow")
@@ -177,6 +182,7 @@ python3 linear-custom-view/scripts/custom_view.py https://linear.app/example/vie
 python3 linear-change-status/scripts/change_status.py LIN-123 Done --env-file /path/to/.env.local --dry-run
 python3 linear-comment-issue/scripts/comment_issue.py LIN-123 --body "Example comment" --env-file /path/to/.env.local --dry-run
 python3 linear-create-issue/scripts/create_issue.py --team LIN --status Backlog --title "Example issue" --env-file /path/to/.env.local --dry-run
+python3 linear-delete-issue/scripts/delete_issue.py LIN-123 --env-file /path/to/.env.local --dry-run --json
 python3 linear-label-setup/scripts/label_setup.py --team LIN --label Example --env-file /path/to/.env.local --dry-run
 python3 linear-list-issues/scripts/list_issues.py --team LIN --open-only --without-labels --env-file /path/to/.env.local --limit 10
 python3 linear-update-issue/scripts/update_issue.py LIN-123 --add-label Example --env-file /path/to/.env.local --dry-run

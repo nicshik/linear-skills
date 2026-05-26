@@ -39,6 +39,7 @@ For Codex, approve only the script entrypoints:
 python3 linear-change-status/scripts/change_status.py
 python3 linear-comment-issue/scripts/comment_issue.py
 python3 linear-create-issue/scripts/create_issue.py
+python3 linear-delete-issue/scripts/delete_issue.py
 python3 linear-custom-view/scripts/custom_view.py
 python3 linear-custom-view-setup/scripts/custom_view_setup.py
 python3 linear-custom-view-update/scripts/custom_view_update.py

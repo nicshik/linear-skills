@@ -13,6 +13,7 @@ SKILLS = (
     "linear-change-status",
     "linear-comment-issue",
     "linear-create-issue",
+    "linear-delete-issue",
     "linear-custom-view",
     "linear-custom-view-setup",
     "linear-custom-view-update",

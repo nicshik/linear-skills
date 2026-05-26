@@ -16,6 +16,7 @@ Codex-навыки и небольшие Python-скрипты для прямо
 | `linear-change-status` | Меняет статус Linear-задачи и проверяет итог. |
 | `linear-comment-issue` | Добавляет один комментарий к Linear-задаче после чтения и проверки цели. |
 | `linear-create-issue` | Создаёт одну Linear-задачу после проверки команды, статуса, проекта и меток. |
+| `linear-delete-issue` | Мягко удаляет одну Linear-задачу после чтения и явных защитных проверок. |
 | `linear-custom-view-setup` | Проверяет и при необходимости создаёт один Custom View для команды. |
 | `linear-custom-view-update` | Обновляет один существующий Custom View после чтения и проверки метаданных. |
 | `linear-label-setup` | Проверяет и при необходимости создаёт метки задач в команде. |
@@ -39,6 +40,10 @@ linear-create-issue/
   SKILL.md
   agents/openai.yaml
   scripts/create_issue.py
+linear-delete-issue/
+  SKILL.md
+  agents/openai.yaml
+  scripts/delete_issue.py
 linear-custom-view/
   SKILL.md
   agents/openai.yaml
@@ -189,9 +194,25 @@ python3 linear-comment-issue/scripts/comment_issue.py LIN-123 \
   --env-file /path/to/.env.local
 ```
 
+Мягко удалить одну задачу после защитных проверок:
+
+```bash
+python3 linear-delete-issue/scripts/delete_issue.py LIN-123 \
+  --expect-status Done \
+  --forbid-label Idea \
+  --require-no-children \
+  --require-no-relations \
+  --require-no-comments \
+  --env-file /path/to/.env.local \
+  --dry-run \
+  --json
+```
+
+Для живого удаления повторите проверенную команду без `--dry-run` и добавьте `--confirm LIN-123`. Helper не поддерживает безвозвратное удаление.
+
 ### Диагностика целевой задачи
 
-Для чтения и комментариев по возможности используйте стабильные ключи задач, например `LIN-123`. Если `linear-read-issue` или `linear-comment-issue` дошёл до Linear, но не нашёл целевую Issue, JSON-вывод содержит `error_category=not_found`, `error_code=issue_not_found`, `lookup`, `input_kind` и безопасную подсказку `hint`.
+Для чтения, комментариев и удаления по возможности используйте стабильные ключи задач, например `LIN-123`. Если `linear-read-issue`, `linear-comment-issue` или `linear-delete-issue` дошёл до Linear, но не нашёл целевую Issue, JSON-вывод содержит `error_category=not_found`, `error_code=issue_not_found`, `lookup`, `input_kind` и безопасную подсказку `hint`.
 
 `issue_not_found` означает неверную, недоступную или относящуюся к другой рабочей области цель. Не описывайте это как отсутствие `LINEAR_API_KEY`, если helper явно не вернул `error_category=missing_api_key`.
 
@@ -305,6 +326,7 @@ python3 linear-change-status/scripts/change_status.py \
 - `linear-comment-issue` создаёт один комментарий после чтения и проверки целевой задачи.
 - `linear-read-issue` читает одну задачу и, если нужно, комментарии или связи без изменений Linear.
 - `linear-create-issue` создаёт одну задачу после проверки нужных метаданных и затем проверяет созданную задачу.
+- `linear-delete-issue` мягко удаляет одну задачу после чтения, защитных проверок и точного `--confirm` для живого удаления.
 - `linear-label-setup` создаёт отсутствующие метки только по явному запросу и ничего не делает с уже существующими метками.
 - `linear-list-issues` читает списки задач для проверки метаданных без изменений Linear.
 - `linear-update-issue` обновляет одну существующую задачу после чтения, включая priority или ручной `sortOrder`, и затем проверяет результат.
@@ -322,6 +344,7 @@ python3 linear-change-status/scripts/change_status.py \
 python3 linear-change-status/scripts/change_status.py
 python3 linear-comment-issue/scripts/comment_issue.py
 python3 linear-create-issue/scripts/create_issue.py
+python3 linear-delete-issue/scripts/delete_issue.py
 python3 linear-custom-view/scripts/custom_view.py
 python3 linear-custom-view-setup/scripts/custom_view_setup.py
 python3 linear-custom-view-update/scripts/custom_view_update.py
@@ -348,6 +371,8 @@ python3 linear-update-issue/scripts/update_issue.py
 - `linear-list-issues` отправляет только запросы чтения и никогда не отправляет GraphQL mutations.
 - `linear-create-issue --dry-run` проверяет команду, статус, проект и метки без создания задачи.
 - `linear-comment-issue --dry-run` проверяет целевую задачу без создания комментария.
+- `linear-delete-issue --dry-run` читает целевую задачу и защитные проверки без удаления.
+- `linear-delete-issue` мягко удаляет ровно одну задачу, требует точный `--confirm` и не поддерживает безвозвратное удаление.
 - `linear-create-issue --optional-label` пропускает отсутствующие необязательные метки, но сохраняет ошибку для обязательных меток.
 - `linear-create-issue` может назначить ответственного и родительскую задачу после проверки их ID; отсутствующие метки он не создаёт.
 - `linear-label-setup --dry-run` проверяет команду и метки без создания меток.
