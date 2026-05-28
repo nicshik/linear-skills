@@ -2,7 +2,15 @@
 
 ## Unreleased
 
+- Nothing yet.
+
+## 2026-05-26 - v0.2.4
+
 - Add `linear-delete-issue` for checked soft deletion of one issue with read-before-delete, dry-run, exact confirmation, and guard checks.
+- Run GitHub Actions CI on the self-hosted `linear-skills-ci` runner.
+
+## 2026-05-22 - v0.2.3
+
 - Allow `linear-update-issue` to set issue `priority` with checked aliases, dry-run support, and verified read-back.
 - Add structured `issue_not_found` diagnostics for read/comment helpers so wrong issue targets are not confused with API key or connector failures.
 - Allow `linear-update-issue` to set `sortOrder` for checked manual issue ordering.
