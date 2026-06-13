@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Nothing yet.
+- Run GitHub Actions CI on GitHub-hosted Ubuntu runners.
 
 ## 2026-05-26 - v0.2.4
 
