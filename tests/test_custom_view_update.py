@@ -102,6 +102,7 @@ class CustomViewUpdateTest(unittest.TestCase):
             "label": ["Product"],
             "status": ["Backlog"],
             "open_only": True,
+            "name": None,
             "description": None,
             "color": None,
             "icon": None,
@@ -156,6 +157,23 @@ class CustomViewUpdateTest(unittest.TestCase):
         )
         self.assertEqual(update_variables["input"], {"shared": False})
         self.assertFalse(result["verified"]["shared"])
+
+    def test_update_sets_name_without_filter_change(self) -> None:
+        client = FakeClient([self.view()])
+
+        result = custom_view_update.update_custom_view(
+            client,
+            self.args(label=[], status=[], open_only=False, project=None, name="[Archive] Product Queue"),
+        )
+
+        self.assertEqual(result["action"], "updated")
+        update_variables = next(
+            variables for query, variables in zip(client.queries, client.variables)
+            if "mutation UpdateCustomView" in query
+        )
+        self.assertEqual(update_variables["input"], {"name": "[Archive] Product Queue"})
+        self.assertEqual(result["verified"]["name"], "[Archive] Product Queue")
+        self.assertFalse(result["target"]["filter_changed"])
 
     def test_name_lookup_requires_team(self) -> None:
         client = FakeClient([self.view()])

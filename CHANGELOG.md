@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Allow `linear-custom-view-update` to rename a Custom View with `--name`, leaving filters and manual order unchanged.
 - Run GitHub Actions CI on GitHub-hosted Ubuntu runners.
 - Clarify that the skills are runtime-agnostic: plain Python over the Linear GraphQL API, runnable from Codex, Claude Code, Cursor, Antigravity, Windsurf, or a shell. Reword the README intro and the approvals section accordingly.
 - Add `antigravity` and `windsurf` to each skill's `compatibility.runtimes`.

@@ -51,6 +51,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--label", action="append", default=[], help="Label name or ID for the view filter. Can be repeated.")
     parser.add_argument("--status", action="append", default=[], help="Workflow state name or ID for the view filter. Can be repeated.")
     parser.add_argument("--open-only", action="store_true", help="Filter out completed and canceled issues.")
+    parser.add_argument("--name", help="Replacement Custom View name.")
     parser.add_argument("--description", help="Replacement Custom View description.")
     parser.add_argument("--color", help="Replacement Custom View color.")
     parser.add_argument("--icon", help="Replacement Custom View icon.")
@@ -237,6 +238,8 @@ def build_update_input(
     input_data: dict[str, Any] = {}
     if project:
         input_data["projectId"] = project["id"]
+    if args.name is not None:
+        input_data["name"] = args.name
     if args.description is not None:
         input_data["description"] = args.description
     if args.color is not None:
@@ -258,6 +261,7 @@ def build_update_input(
         "statuses": statuses,
         "filterData": target_filter if filter_update_requested(args) else view.get("filterData"),
         "filter_changed": filter_update_requested(args),
+        "name": input_data.get("name", view.get("name")),
         "shared": input_data.get("shared", view.get("shared")),
     }
     return input_data, target

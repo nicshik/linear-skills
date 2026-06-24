@@ -30,6 +30,7 @@ Use this skill when the normal Linear connector cannot update one existing Custo
 - Read the Custom View before mutation.
 - Use `--dry-run` before live updates.
 - Update only the fields explicitly passed on the command line.
+- Use `--name` for a narrow Custom View rename without changing filters or manual order.
 - Do not use this helper to read queue order; use `linear-custom-view` for that.
 - Do not use this helper to change manual issue ordering.
 - Read the Custom View again after mutation and report the verified result.
@@ -45,6 +46,7 @@ When Codex sandboxing asks for approval because the script needs network access,
 
 ```bash
 python3 scripts/custom_view_update.py "Product MVP" --team LIN --label Product --status Backlog --open-only --dry-run --json
+python3 scripts/custom_view_update.py https://linear.app/example/view/product-mvp-123abc --name "[Archive] Product MVP" --dry-run --json
 python3 scripts/custom_view_update.py https://linear.app/example/view/product-mvp-123abc --team LIN --shared --json
 ```
 
