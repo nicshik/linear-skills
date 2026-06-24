@@ -14,7 +14,6 @@ blocked_terms=(
   "Factor""ix"
   "F""CT-"
   "/Users/""nick"
-  "Wind""surf"
   "shini""hi"
   "ochered""-realizacii"
   "Agent ""Creator"

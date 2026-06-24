@@ -2,7 +2,9 @@
 
 [Русский](README.ru.md)
 
-Codex skills and small Python scripts for direct Linear GraphQL API workflows.
+Agent skills and small Python scripts for direct Linear GraphQL API workflows.
+
+The scripts are plain Python over the Linear GraphQL API, so they run from any agent runtime that can execute Python — Codex, Claude Code, Cursor, Antigravity, Windsurf — or from a plain shell. `SKILL.md` carries the cross-runtime skill metadata; `agents/openai.yaml` is the Codex/OpenAI adapter.
 
 This repository is useful when the standard Linear connector is read-only, unavailable, or blocked by a tool guard, but you still need a narrow, auditable way to automate Linear actions with your own personal API key.
 
@@ -335,9 +337,9 @@ These skills are low-level Linear helpers:
 
 They do not decide which project issue should be implemented, whether delivery is complete, or whether `Done` is appropriate. Keep those decisions in a project-specific wrapper skill or process document. The wrapper can call these scripts through stable environment variables such as `LINEAR_API_KEY`, `LINEAR_ENV_FILE`, or `--env-file`.
 
-## Codex Approvals
+## Agent Approvals
 
-The scripts call the Linear API, so Codex may ask for network approval. To avoid repeated prompts while keeping the permission narrow, approve only these prefixes:
+The scripts call the Linear API, so an agent runtime may ask for network approval. To avoid repeated prompts while keeping the permission narrow, approve only these prefixes (the example uses Codex; the same narrow-entrypoint rule applies to Claude Code, Cursor, Antigravity, Windsurf, or any runtime with a permission model):
 
 ```text
 python3 linear-change-status/scripts/change_status.py

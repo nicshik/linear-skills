@@ -11,6 +11,8 @@ metadata:
       - codex
       - claude_code
       - cursor
+      - antigravity
+      - windsurf
   distribution_scope: public
   invocation_strategy: explicit
   version: v0.2
