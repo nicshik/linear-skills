@@ -52,6 +52,14 @@ ISSUE_FIELDS = """
       relatedIssue { id identifier title state { name type } }
     }
   }
+  inverseRelations(first: 50) {
+    pageInfo { hasNextPage }
+    nodes {
+      id
+      type
+      issue { id identifier title state { name type } }
+    }
+  }
 """
 
 
@@ -96,6 +104,7 @@ def normalize_issue(issue: dict[str, Any]) -> dict[str, Any]:
     compact["children_summary"] = summarize_connection(compact.get("children"))
     compact["comments_summary"] = summarize_connection(compact.get("comments"))
     compact["relations_summary"] = summarize_connection(compact.get("relations"))
+    compact["inverse_relations_summary"] = summarize_connection(compact.get("inverseRelations"))
     return compact
 
 
@@ -155,6 +164,32 @@ def check_zero_connection(issue: dict[str, Any], key: str, enabled: bool) -> dic
     }
 
 
+def check_no_relations(issue: dict[str, Any], enabled: bool) -> dict[str, Any]:
+    """Relations are directional in Linear, so guard both sides.
+
+    ``relations`` holds edges where this issue is the source; ``inverseRelations``
+    holds edges where another issue points at this one. Checking only the former
+    lets an issue that other issues depend on pass the guard.
+    """
+    outgoing = visible_count(issue, "relations")
+    outgoing_more = has_more(issue, "relations")
+    incoming = visible_count(issue, "inverse_relations")
+    incoming_more = has_more(issue, "inverse_relations")
+    count = outgoing + incoming
+    more = outgoing_more or incoming_more
+    return {
+        "name": "require_no_relations",
+        "enabled": enabled,
+        "ok": (not enabled) or (count == 0 and not more),
+        "visible_count": count,
+        "has_more": more,
+        "outgoing_visible_count": outgoing,
+        "outgoing_has_more": outgoing_more,
+        "incoming_visible_count": incoming,
+        "incoming_has_more": incoming_more,
+    }
+
+
 def build_guard_checks(issue: dict[str, Any], args: argparse.Namespace) -> list[dict[str, Any]]:
     labels = set(issue.get("labels") or [])
     label_norms = {normalize(label): label for label in labels}
@@ -185,7 +220,7 @@ def build_guard_checks(issue: dict[str, Any], args: argparse.Namespace) -> list[
         )
 
     checks.append(check_zero_connection(issue, "children", args.require_no_children))
-    checks.append(check_zero_connection(issue, "relations", args.require_no_relations))
+    checks.append(check_no_relations(issue, args.require_no_relations))
     checks.append(check_zero_connection(issue, "comments", args.require_no_comments))
     return checks
 

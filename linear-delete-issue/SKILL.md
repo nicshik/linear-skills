@@ -45,6 +45,7 @@ Prefer the official Linear connector for normal issue deletion. This skill is a 
 - For live deletion, pass `--confirm <ISSUE-KEY>`; the value must match the resolved issue identifier.
 - Prefer a stable issue key such as `LIN-123` when available. A URL or UUID that points to a comment, project, relation, or another workspace is not a valid delete target.
 - Use guard options such as `--expect-status`, `--forbid-label`, `--require-no-children`, `--require-no-relations`, and `--require-no-comments` when the caller has deletion rules.
+- `--require-no-relations` covers both directions: outgoing `relations` and incoming `inverseRelations`. An issue that other issues point at is blocked even when it declares no relations of its own. The guard check reports `outgoing_visible_count` and `incoming_visible_count` separately.
 
 ## Codex Permission Rule
 
