@@ -24,6 +24,7 @@ class FakeClient:
         labels: list[str] | None = None,
         children: int = 0,
         relations: int = 0,
+        inverse_relations: int = 0,
         comments: int = 0,
         trashed: bool = False,
     ) -> None:
@@ -33,6 +34,7 @@ class FakeClient:
         self.labels = labels or ["Product"]
         self.children = children
         self.relations = relations
+        self.inverse_relations = inverse_relations
         self.comments = comments
         self.trashed = trashed
         self.delete_calls = 0
@@ -87,6 +89,20 @@ class FakeClient:
                 }
                 for idx in range(count)
             ]
+        elif kind == "inverseRelations":
+            nodes = [
+                {
+                    "id": f"inverse-relation-{idx}",
+                    "type": "blocks",
+                    "issue": {
+                        "id": f"blocker-{idx}",
+                        "identifier": f"LIN-9{idx}",
+                        "title": f"Blocker {idx}",
+                        "state": {"name": "Todo", "type": "unstarted"},
+                    },
+                }
+                for idx in range(count)
+            ]
         else:
             nodes = [
                 {
@@ -120,6 +136,7 @@ class FakeClient:
             "children": self.connection(self.children, "children"),
             "comments": self.connection(self.comments, "comments"),
             "relations": self.connection(self.relations, "relations"),
+            "inverseRelations": self.connection(self.inverse_relations, "inverseRelations"),
         }
 
 
@@ -197,6 +214,7 @@ class DeleteIssueTest(unittest.TestCase):
         cases = [
             ("children", {"children": 1}, {"require_no_children": True}, "require_no_children"),
             ("relations", {"relations": 1}, {"require_no_relations": True}, "require_no_relations"),
+            ("inverse_relations", {"inverse_relations": 1}, {"require_no_relations": True}, "require_no_relations"),
             ("comments", {"comments": 1}, {"require_no_comments": True}, "require_no_comments"),
         ]
 
@@ -207,6 +225,28 @@ class DeleteIssueTest(unittest.TestCase):
                     delete_issue.delete_issue(client, self.args(dry_run=True, **arg_kwargs))
                 self.assertEqual(error.exception.category, "validation")
                 self.assertEqual(error.exception.details["failed_checks"][0]["name"], check_name)
+
+    def test_require_no_relations_reports_both_directions(self) -> None:
+        client = FakeClient(relations=2, inverse_relations=3)
+
+        with self.assertRaises(delete_issue.LinearApiError) as error:
+            delete_issue.delete_issue(client, self.args(dry_run=True, require_no_relations=True))
+
+        check = error.exception.details["failed_checks"][0]
+        self.assertEqual(check["name"], "require_no_relations")
+        self.assertEqual(check["outgoing_visible_count"], 2)
+        self.assertEqual(check["incoming_visible_count"], 3)
+        self.assertEqual(check["visible_count"], 5)
+
+    def test_require_no_relations_passes_when_both_directions_empty(self) -> None:
+        client = FakeClient()
+
+        result = delete_issue.delete_issue(client, self.args(dry_run=True, require_no_relations=True))
+
+        check = next(item for item in result["guard_checks"] if item["name"] == "require_no_relations")
+        self.assertTrue(check["ok"])
+        self.assertEqual(check["visible_count"], 0)
+        self.assertIn("inverseRelations", "\n".join(client.queries))
 
     def test_successful_live_deletion_calls_issue_delete_once(self) -> None:
         client = FakeClient()
