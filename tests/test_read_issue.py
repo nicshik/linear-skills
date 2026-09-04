@@ -104,5 +104,74 @@ class ReadIssueTest(unittest.TestCase):
         self.assertEqual(error.exception.details["input_kind"], "url_with_identifier")
 
 
+
+class PagingClient:
+    """Serves one first page plus N extra comment pages, like Linear does past 50 nodes."""
+
+    def __init__(self, extra_pages: int = 2, repeat_cursor: bool = False) -> None:
+        self.extra_pages = extra_pages
+        self.repeat_cursor = repeat_cursor
+        self.calls: list[tuple[str, dict]] = []
+
+    def gql(self, query, variables=None):
+        self.calls.append((query, variables or {}))
+        after = (variables or {}).get("after")
+        if after is None:
+            return {
+                "issue": {
+                    "id": "issue-id",
+                    "identifier": "LIN-123",
+                    "title": "Fixture issue",
+                    "labels": {"nodes": []},
+                    "children": {"pageInfo": {"hasNextPage": False, "endCursor": None}, "nodes": []},
+                    "comments": {
+                        "pageInfo": {"hasNextPage": True, "endCursor": "c0"},
+                        "nodes": [{"id": "m0"}],
+                    },
+                    "relations": {"pageInfo": {"hasNextPage": False, "endCursor": None}, "nodes": []},
+                }
+            }
+        index = int(after[1:])
+        if self.repeat_cursor:
+            return {"issue": {"comments": {"pageInfo": {"hasNextPage": True, "endCursor": after}, "nodes": [{"id": "dup"}]}}}
+        last = index + 1 >= self.extra_pages
+        return {
+            "issue": {
+                "comments": {
+                    "pageInfo": {"hasNextPage": not last, "endCursor": f"c{index + 1}"},
+                    "nodes": [{"id": f"m{index + 1}"}],
+                }
+            }
+        }
+
+
+class ReadIssuePaginationTest(unittest.TestCase):
+    def test_first_page_only_issues_no_follow_up_query(self) -> None:
+        client = FakeClient()
+        read_issue.read_issue(client, "LIN-123", include_comments=True, include_relations=True)
+
+        self.assertEqual(len(client.queries), 1)
+
+    def test_comments_past_first_page_are_fetched_and_merged(self) -> None:
+        client = PagingClient(extra_pages=2)
+
+        issue = read_issue.read_issue(client, "LIN-123", include_comments=True, include_relations=True)
+
+        self.assertEqual([node["id"] for node in issue["comments"]["nodes"]], ["m0", "m1", "m2"])
+        self.assertEqual(issue["comments_summary"], {"visible_count": 3, "has_more": False})
+        self.assertEqual([call[1].get("after") for call in client.calls], [None, "c0", "c1"])
+
+    def test_paging_queries_contain_no_mutation(self) -> None:
+        for query in read_issue.CONNECTION_PAGE_QUERIES.values():
+            self.assertNotIn("mutation", query.casefold())
+
+    def test_repeating_cursor_raises_instead_of_looping_forever(self) -> None:
+        client = PagingClient(repeat_cursor=True)
+
+        with self.assertRaises(read_issue.LinearApiError) as error:
+            read_issue.read_issue(client, "LIN-123", include_comments=True, include_relations=True)
+
+        self.assertEqual(error.exception.category, "pagination_stalled")
+
 if __name__ == "__main__":
     unittest.main()

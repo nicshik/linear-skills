@@ -24,8 +24,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("issue", help="Linear issue identifier, ID, or issue URL.")
     parser.add_argument("--env-file", help="Path to a .env file containing LINEAR_API_KEY.")
     parser.add_argument("--api-url", default=API_URL, help="Linear GraphQL API URL.")
-    parser.add_argument("--include-comments", action="store_true", help="Include the first 50 comments.")
-    parser.add_argument("--include-relations", action="store_true", help="Include the first 50 issue relations.")
+    parser.add_argument("--include-comments", action="store_true", help="Include every comment, paginating past the first 50.")
+    parser.add_argument("--include-relations", action="store_true", help="Include every issue relation, paginating past the first 50.")
     parser.add_argument("--json", action="store_true", help="Emit structured JSON.")
     return parser.parse_args()
 
@@ -39,7 +39,7 @@ def issue_query(include_comments: bool, include_relations: bool) -> str:
     if include_comments:
         comments = """
             comments(first: 50) {
-              pageInfo { hasNextPage }
+              pageInfo { hasNextPage endCursor }
               nodes {
                 id
                 body
@@ -54,7 +54,7 @@ def issue_query(include_comments: bool, include_relations: bool) -> str:
     if include_relations:
         relations = """
             relations(first: 50) {
-              pageInfo { hasNextPage }
+              pageInfo { hasNextPage endCursor }
               nodes {
                 id
                 type
@@ -93,7 +93,7 @@ def issue_query(include_comments: bool, include_relations: bool) -> str:
               state {{ name type }}
             }}
             children(first: 50) {{
-              pageInfo {{ hasNextPage }}
+              pageInfo {{ hasNextPage endCursor }}
               nodes {{
                 id
                 identifier
@@ -109,6 +109,99 @@ def issue_query(include_comments: bool, include_relations: bool) -> str:
 
 
 READ_ISSUE_QUERY = issue_query(include_comments=True, include_relations=True)
+
+
+# Follow-up queries used to drain a connection past the first page of 50 nodes.
+# Linear caps a single connection page at 50, so a full read has to paginate.
+CONNECTION_PAGE_QUERIES = {
+    "children": """
+        query IssueChildrenPage($id: String!, $after: String!) {
+          issue(id: $id) {
+            children(first: 50, after: $after) {
+              pageInfo { hasNextPage endCursor }
+              nodes {
+                id
+                identifier
+                title
+                state { name type }
+              }
+            }
+          }
+        }
+    """,
+    "comments": """
+        query IssueCommentsPage($id: String!, $after: String!) {
+          issue(id: $id) {
+            comments(first: 50, after: $after) {
+              pageInfo { hasNextPage endCursor }
+              nodes {
+                id
+                body
+                createdAt
+                updatedAt
+                user { name }
+              }
+            }
+          }
+        }
+    """,
+    "relations": """
+        query IssueRelationsPage($id: String!, $after: String!) {
+          issue(id: $id) {
+            relations(first: 50, after: $after) {
+              pageInfo { hasNextPage endCursor }
+              nodes {
+                id
+                type
+                relatedIssue {
+                  id
+                  identifier
+                  title
+                  state { name type }
+                }
+              }
+            }
+          }
+        }
+    """,
+}
+
+# Safety stop for a runaway cursor: 200 pages is 10 000 nodes on one connection.
+MAX_CONNECTION_PAGES = 200
+
+
+def drain_connection(client: "LinearClient", lookup: str, issue: dict[str, Any], name: str) -> None:
+    """Fetch every remaining page of one connection and merge it into the issue."""
+    connection = issue.get(name)
+    if not isinstance(connection, dict):
+        return
+    page_info = connection.get("pageInfo") or {}
+    seen = {node.get("id") for node in connection.get("nodes") or []}
+    pages = 0
+    while page_info.get("hasNextPage") and page_info.get("endCursor"):
+        if pages >= MAX_CONNECTION_PAGES:
+            raise LinearApiError(
+                "pagination_limit",
+                f"Connection '{name}' on '{lookup}' exceeded {MAX_CONNECTION_PAGES} pages.",
+                {"connection": name, "issue": lookup},
+            )
+        pages += 1
+        data = client.gql(CONNECTION_PAGE_QUERIES[name], {"id": lookup, "after": page_info["endCursor"]})
+        page = ((data.get("issue") or {}).get(name)) or {}
+        for node in page.get("nodes") or []:
+            if node.get("id") in seen:
+                continue
+            seen.add(node.get("id"))
+            connection.setdefault("nodes", []).append(node)
+        next_info = page.get("pageInfo") or {}
+        if next_info.get("endCursor") == page_info.get("endCursor"):
+            raise LinearApiError(
+                "pagination_stalled",
+                f"Connection '{name}' on '{lookup}' returned a repeating cursor.",
+                {"connection": name, "issue": lookup},
+            )
+        page_info = next_info
+    connection["pageInfo"] = {"hasNextPage": False, "endCursor": page_info.get("endCursor")}
 
 
 def summarize_connection(connection: dict[str, Any] | None) -> dict[str, Any]:
@@ -159,6 +252,8 @@ def read_issue(
             f"Issue '{reference.lookup}' was not found.",
             issue_not_found_details(reference),
         )
+    for name in ("children", "comments", "relations"):
+        drain_connection(client, reference.lookup, issue, name)
     return normalize_issue(issue)
 
 
