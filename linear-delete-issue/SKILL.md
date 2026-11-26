@@ -41,6 +41,7 @@ Prefer the official Linear connector for normal issue deletion. This skill is a 
 - Only soft-delete through Linear's normal issue trash flow.
 - Do not permanently delete issues.
 - Read and verify the target issue before sending the mutation.
+- The helper refuses an archived issue by default (`forbid_archived` guard). An archived issue has already left the active list; pass `--allow-archived` only when deleting it is the stated goal.
 - Use `--dry-run` first for every issue unless the caller has already produced an equivalent checked dry-run.
 - For live deletion, pass `--confirm <ISSUE-KEY>`; the value must match the resolved issue identifier.
 - Prefer a stable issue key such as `LIN-123` when available. A URL or UUID that points to a comment, project, relation, or another workspace is not a valid delete target.
