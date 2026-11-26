@@ -61,6 +61,11 @@ class ReadIssueTest(unittest.TestCase):
     def test_read_query_contains_no_mutation(self) -> None:
         self.assertNotIn("mutation", read_issue.READ_ISSUE_QUERY.casefold())
 
+    def test_read_query_requests_archive_and_trash_state(self) -> None:
+        # An archived issue and a deleted one both stay readable; callers tell them apart by these fields.
+        self.assertIn("archivedAt", read_issue.READ_ISSUE_QUERY)
+        self.assertIn("trashed", read_issue.READ_ISSUE_QUERY)
+
     def test_read_issue_normalizes_labels_and_summaries(self) -> None:
         client = FakeClient()
         issue = read_issue.read_issue(client, "LIN-123", include_comments=True, include_relations=True)

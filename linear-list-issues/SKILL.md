@@ -30,6 +30,8 @@ Use this skill when the normal Linear connector cannot provide a checked issue l
 - This helper is read-only and must not contain GraphQL mutation operations.
 - Prefer scoped queries with `--team` and/or `--project`.
 - Use `--without-labels` to find issues with no labels.
+- Use `--include-archived` to also return archived and recently deleted issues. The default list holds live issues only, so an issue missing from it is not proof of deletion.
+- Read `lifecycle` on each issue: `live`, `archived`, or `deleted`. A deleted issue also carries `archivedAt`, so the helper checks `trashed` first.
 - Use `--missing-label` to find issues that do not have a required label.
 - Use `--json` when another tool or agent should consume the output.
 

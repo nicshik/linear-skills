@@ -27,6 +27,8 @@ ISSUE_FIELDS = """
   url
   priority
   updatedAt
+  archivedAt
+  trashed
   state { id name type }
   team { id key name }
   project { id name }
@@ -46,6 +48,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--team", help="Target team key, ID, or exact name.")
     parser.add_argument("--project", help="Target project ID or exact name.")
     parser.add_argument("--open-only", action="store_true", help="Return only non-completed issues.")
+    parser.add_argument(
+        "--include-archived",
+        action="store_true",
+        help="Also return archived and recently deleted issues; each issue reports its lifecycle.",
+    )
     parser.add_argument("--status", help="Workflow state ID, exact name, or type.")
     parser.add_argument("--assignee", help="Assignee user ID, exact name, display name, or email.")
     parser.add_argument("--parent", help="Parent issue key, ID, or URL.")
@@ -191,6 +198,18 @@ def resolve_issue(client: LinearClient, value: str | None) -> dict[str, Any] | N
     return issue
 
 
+def lifecycle_of(issue: dict[str, Any]) -> str:
+    """Classify an issue as live, archived, or deleted.
+
+    A deleted issue also carries ``archivedAt``, so ``trashed`` is checked first.
+    """
+    if issue.get("trashed"):
+        return "deleted"
+    if issue.get("archivedAt"):
+        return "archived"
+    return "live"
+
+
 def compact_issue(issue: dict[str, Any]) -> dict[str, Any]:
     labels = issue.get("labels") or {}
     return {
@@ -200,6 +219,9 @@ def compact_issue(issue: dict[str, Any]) -> dict[str, Any]:
         "url": issue.get("url"),
         "priority": issue.get("priority"),
         "updatedAt": issue.get("updatedAt"),
+        "archivedAt": issue.get("archivedAt"),
+        "trashed": bool(issue.get("trashed")),
+        "lifecycle": lifecycle_of(issue),
         "state": issue.get("state"),
         "team": issue.get("team"),
         "project": issue.get("project"),
@@ -283,12 +305,13 @@ def fetch_matching_issues(
     has_more = False
     after: str | None = None
     page_size = min(args.page_size, 250)
+    include_archived = bool(getattr(args, "include_archived", False))
 
     while len(matched) < args.limit:
         data = client.gql(
             f"""
-            query Issues($first: Int!, $after: String, $filter: IssueFilter) {{
-              issues(first: $first, after: $after, filter: $filter) {{
+            query Issues($first: Int!, $after: String, $filter: IssueFilter, $includeArchived: Boolean) {{
+              issues(first: $first, after: $after, filter: $filter, includeArchived: $includeArchived) {{
                 pageInfo {{
                   hasNextPage
                   endCursor
@@ -299,7 +322,12 @@ def fetch_matching_issues(
               }}
             }}
             """,
-            {"first": page_size, "after": after, "filter": server_filter or None},
+            {
+                "first": page_size,
+                "after": after,
+                "filter": server_filter or None,
+                "includeArchived": include_archived,
+            },
         )
         connection = data["issues"]
         nodes = connection["nodes"]
@@ -322,6 +350,8 @@ def fetch_matching_issues(
         after = connection["pageInfo"]["endCursor"]
 
     counts = {"fetched": fetched, "matched": len(matched), "skipped": skipped}
+    for lifecycle in ("live", "archived", "deleted"):
+        counts[lifecycle] = sum(1 for issue in matched if issue.get("lifecycle") == lifecycle)
     return matched, counts, has_more
 
 
@@ -345,6 +375,7 @@ def build_result(client: LinearClient, args: argparse.Namespace) -> dict[str, An
         },
         "filters": {
             "open_only": args.open_only,
+            "include_archived": bool(getattr(args, "include_archived", False)),
             "labels": args.label,
             "exclude_labels": args.exclude_label,
             "missing_labels": args.missing_label,
