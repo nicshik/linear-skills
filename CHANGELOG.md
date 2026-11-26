@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- `linear-delete-issue` refuses an archived issue by default and reports the `forbid_archived` guard. Pass `--allow-archived` to delete one on purpose. A deleted issue still reports `already_deleted`.
 - Add `--include-archived` to `linear-list-issues`. Each listed issue now reports `archivedAt`, `trashed`, and `lifecycle` (`live`, `archived`, `deleted`); `counts` reports the three totals.
 - Return `archivedAt` and `trashed` from `linear-read-issue`.
 - Allow `linear-custom-view-update` to rename a Custom View with `--name`, leaving filters and manual order unchanged.

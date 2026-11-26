@@ -27,6 +27,7 @@ class FakeClient:
         inverse_relations: int = 0,
         comments: int = 0,
         trashed: bool = False,
+        archived_at: str | None = None,
     ) -> None:
         self.queries: list[str] = []
         self.variables: list[dict] = []
@@ -37,6 +38,7 @@ class FakeClient:
         self.inverse_relations = inverse_relations
         self.comments = comments
         self.trashed = trashed
+        self.archived_at = archived_at
         self.delete_calls = 0
 
     def gql(self, query, variables=None):
@@ -125,7 +127,7 @@ class FakeClient:
             "createdAt": "2026-01-01T00:00:00Z",
             "updatedAt": "2026-01-01T00:00:00Z",
             "completedAt": "2026-01-02T00:00:00Z",
-            "archivedAt": None,
+            "archivedAt": self.archived_at,
             "trashed": self.trashed,
             "state": {"id": "done", "name": self.status, "type": "completed"},
             "team": {"id": "team-id", "key": "LIN", "name": "Example"},
@@ -262,6 +264,40 @@ class DeleteIssueTest(unittest.TestCase):
         self.assertEqual(mutation_variables, {"id": "issue-id", "permanentlyDelete": False})
         self.assertTrue(result["deleted"]["entity"]["trashed"])
         self.assertEqual(result["verification_status"], "read_back")
+
+    def test_archived_issue_is_refused_by_default(self) -> None:
+        client = FakeClient(archived_at="2026-05-20T00:00:00.000Z")
+
+        for dry_run in (True, False):
+            with self.assertRaises(delete_issue.LinearApiError) as raised:
+                delete_issue.delete_issue(client, self.args(dry_run=dry_run, confirm="LIN-123"))
+            self.assertIn("forbid_archived", raised.exception.message)
+        self.assertEqual(client.delete_calls, 0)
+
+    def test_allow_archived_lets_the_dry_run_pass(self) -> None:
+        client = FakeClient(archived_at="2026-05-20T00:00:00.000Z")
+
+        result = delete_issue.delete_issue(client, self.args(dry_run=True, allow_archived=True))
+
+        self.assertEqual(result["action"], "dry_run")
+        check = next(item for item in result["guard_checks"] if item["name"] == "forbid_archived")
+        self.assertEqual((check["enabled"], check["ok"]), (False, True))
+        self.assertEqual(client.delete_calls, 0)
+
+    def test_live_issue_passes_the_archived_guard(self) -> None:
+        result = delete_issue.delete_issue(FakeClient(), self.args(dry_run=True))
+
+        check = next(item for item in result["guard_checks"] if item["name"] == "forbid_archived")
+        self.assertEqual((check["enabled"], check["ok"], check["archived_at"]), (True, True, None))
+
+    def test_deleted_issue_with_archive_stamp_reports_already_deleted(self) -> None:
+        # A deleted issue carries archivedAt too; it must not be reported as a refused archived issue.
+        client = FakeClient(trashed=True, archived_at="2026-05-20T00:00:00.000Z")
+
+        result = delete_issue.delete_issue(client, self.args(dry_run=True))
+
+        self.assertEqual(result["action"], "already_deleted")
+        self.assertEqual(client.delete_calls, 0)
 
     def test_already_trashed_issue_does_not_mutate(self) -> None:
         client = FakeClient(trashed=True)

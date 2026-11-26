@@ -74,6 +74,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--require-no-children", action="store_true", help="Block deletion if visible child issues exist.")
     parser.add_argument("--require-no-relations", action="store_true", help="Block deletion if visible issue relations exist.")
     parser.add_argument("--require-no-comments", action="store_true", help="Block deletion if visible comments exist.")
+    parser.add_argument(
+        "--allow-archived",
+        action="store_true",
+        help="Allow deleting an issue that Linear has archived. Archived issues are refused by default.",
+    )
     parser.add_argument("--dry-run", action="store_true", help="Read and validate without mutating Linear.")
     parser.add_argument("--json", action="store_true", help="Emit structured JSON.")
     return parser.parse_args()
@@ -219,6 +224,17 @@ def build_guard_checks(issue: dict[str, Any], args: argparse.Namespace) -> list[
             }
         )
 
+    # An archived issue has already left the active list, so deleting it is refused unless asked for.
+    allow_archived = bool(getattr(args, "allow_archived", False))
+    archived_at = issue.get("archivedAt")
+    checks.append(
+        {
+            "name": "forbid_archived",
+            "enabled": not allow_archived,
+            "ok": allow_archived or not archived_at,
+            "archived_at": archived_at,
+        }
+    )
     checks.append(check_zero_connection(issue, "children", args.require_no_children))
     checks.append(check_no_relations(issue, args.require_no_relations))
     checks.append(check_zero_connection(issue, "comments", args.require_no_comments))
