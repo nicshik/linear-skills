@@ -378,6 +378,8 @@ For complete setup guidance, including how to pre-seed rules before the first ru
 - `linear-create-issue` can assign a user and parent issue after resolving both IDs; it does not create missing labels.
 - `linear-label-setup --dry-run` resolves team and labels without creating labels.
 - `linear-list-issues --without-labels` returns only issues whose `labels.nodes` list is empty.
+- `linear-list-issues --include-archived` also returns archived and recently deleted issues. Each issue reports `archivedAt`, `trashed`, and `lifecycle` (`live`, `archived`, `deleted`).
+- `linear-read-issue` returns `archivedAt` and `trashed`, so a caller can tell an archived issue from a deleted one.
 - `linear-list-issues --missing-label` returns issues missing at least one requested label.
 - `linear-update-issue` reads the issue before updating labels, assignee, parent, title, description, or `sortOrder`, then verifies the result.
 - `linear-update-issue --dry-run` resolves the target update without updating Linear.

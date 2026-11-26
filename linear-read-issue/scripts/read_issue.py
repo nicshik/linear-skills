@@ -80,6 +80,8 @@ def issue_query(include_comments: bool, include_relations: bool) -> str:
             createdAt
             updatedAt
             completedAt
+            archivedAt
+            trashed
             state {{ id name type }}
             team {{ id key name }}
             project {{ id name }}

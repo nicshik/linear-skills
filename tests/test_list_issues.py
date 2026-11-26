@@ -81,7 +81,14 @@ class FakeClient:
         raise AssertionError(query)
 
     @staticmethod
-    def issue(identifier: str, state_name: str, state_type: str, labels: list[str]):
+    def issue(
+        identifier: str,
+        state_name: str,
+        state_type: str,
+        labels: list[str],
+        archived_at: str | None = None,
+        trashed: bool | None = None,
+    ):
         return {
             "id": f"{identifier.lower()}-id",
             "identifier": identifier,
@@ -89,6 +96,8 @@ class FakeClient:
             "url": f"https://linear.app/example/issue/{identifier}/fixture",
             "priority": 0,
             "updatedAt": "2026-05-18T00:00:00.000Z",
+            "archivedAt": archived_at,
+            "trashed": trashed,
             "state": {"id": state_name.lower(), "name": state_name, "type": state_type},
             "team": {"id": "team-id", "key": "LIN", "name": "Example"},
             "project": {"id": "project-id", "name": "Example Project"},
@@ -116,6 +125,48 @@ class ListIssuesTest(unittest.TestCase):
         }
         defaults.update(overrides)
         return SimpleNamespace(**defaults)
+
+    def test_default_list_does_not_request_archived_issues(self) -> None:
+        client = FakeClient()
+
+        result = list_issues.build_result(client, self.args())
+
+        issues_variables = next(variables for query, variables in zip(client.queries, client.variables) if "query Issues" in query)
+        self.assertIs(issues_variables["includeArchived"], False)
+        self.assertIs(result["filters"]["include_archived"], False)
+        self.assertEqual([issue["lifecycle"] for issue in result["issues"]], ["live"])
+        self.assertEqual(result["counts"]["live"], 1)
+
+    def test_include_archived_classifies_live_archived_and_deleted(self) -> None:
+        client = FakeClient(
+            [
+                [
+                    FakeClient.issue("LIN-1", "Todo", "unstarted", []),
+                    FakeClient.issue("LIN-2", "Done", "completed", [], archived_at="2026-05-20T00:00:00.000Z"),
+                    # A deleted issue carries archivedAt too; trashed must win.
+                    FakeClient.issue("LIN-3", "Done", "completed", [], archived_at="2026-05-21T00:00:00.000Z", trashed=True),
+                ]
+            ]
+        )
+
+        result = list_issues.build_result(client, self.args(include_archived=True))
+
+        issues_query, issues_variables = next(
+            (query, variables) for query, variables in zip(client.queries, client.variables) if "query Issues" in query
+        )
+        self.assertIn("includeArchived: $includeArchived", issues_query)
+        self.assertIn("archivedAt", issues_query)
+        self.assertIn("trashed", issues_query)
+        self.assertIs(issues_variables["includeArchived"], True)
+        self.assertIs(result["filters"]["include_archived"], True)
+        lifecycles = {issue["identifier"]: issue["lifecycle"] for issue in result["issues"]}
+        self.assertEqual(lifecycles, {"LIN-1": "live", "LIN-2": "archived", "LIN-3": "deleted"})
+        self.assertEqual(result["issues"][1]["archivedAt"], "2026-05-20T00:00:00.000Z")
+        self.assertIs(result["issues"][2]["trashed"], True)
+        self.assertEqual(
+            {name: result["counts"][name] for name in ("live", "archived", "deleted")},
+            {"live": 1, "archived": 1, "deleted": 1},
+        )
 
     def test_lists_open_issues_by_team_and_project(self) -> None:
         client = FakeClient(
